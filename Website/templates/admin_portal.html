@@ -1,0 +1,163 @@
+{% extends 'base.html' %} 
+{% block title %}Admin Dashboard{% endblock %} 
+{% block content %}
+<div class="container mt-5">
+  <div class="text-center mb-5">
+    <h2 class="fw-bold">Welcome, {{ current_user.first_name }} 👋</h2>
+    <p class="text-muted">
+      You are logged in as <strong>Admin</strong>. Manage your system using the
+      tools below.
+    </p>
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    
+    <div class="col-12 text-start mb-2">
+        <h4 class="border-bottom pb-2 text-dark">⚙️ System Management</h4>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">View All Rooms</h5>
+          <p class="card-text text-muted">
+            Browse and manage all rooms currently in the system.
+          </p>
+          <a
+            href="{{ url_for('views.view_rooms') }}"
+            class="btn btn-outline-primary w-100"
+            >View Rooms</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Add or Delete Rooms</h5>
+          <p class="card-text text-muted">
+            Add new rooms or remove existing ones from the system.
+          </p>
+          <a
+            href="{{ url_for('views.manage_rooms') }}"
+            class="btn btn-outline-secondary w-100"
+            >Manage Rooms</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Approve Bookings</h5>
+          <p class="card-text text-muted">
+            Approve or reject room booking requests from users.
+          </p>
+          <a
+            href="{{ url_for('views.pending_bookings') }}"
+            class="btn btn-outline-success w-100"
+            >Manage Bookings</a
+          >
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Incoming Messages</h5>
+          <p class="card-text text-muted">
+            Review messages or queries from faculty and students.
+          </p>
+          <a
+            href="{{ url_for('views.view_contact_messages') }}"
+            class="btn btn-outline-dark w-100"
+            >View Messages</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 text-start mb-2 mt-4">
+        <h4 class="border-bottom pb-2 text-primary">🧠 AI & Intelligence Center</h4>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-danger h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-danger">Maintenance Alerts</h5>
+            <p class="card-text small">
+              <strong>AI Action:</strong> Scans feedback for words like "broken" or "repair" to flag facility issues.
+            </p>
+            <a
+              href="{{ url_for('views.ai_maintenance_alerts') }}"
+              class="btn btn-danger text-white w-100"
+              >View Alerts</a
+            >
+          </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-warning h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-warning">Predictive Insights</h5>
+            <p class="card-text small">
+              <strong>AI Action:</strong> Forecasts high-demand times and displays room popularity trends.
+            </p>
+            <a
+              href="{{ url_for('views.ai_availability_insights') }}"
+              class="btn btn-warning text-white w-100"
+              >View Forecasts</a
+            >
+          </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card shadow-sm border-secondary h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title text-secondary">General Statistics</h5>
+          <p class="card-text small">
+            View standard detailed analytics and historical usage statistics.
+          </p>
+          <a
+            href="{{ url_for('views.admin_dashboard') }}"
+            class="btn btn-outline-secondary w-100"
+            >View Stats</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-info h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-info">Smart Scheduling</h5>
+            <p class="card-text small">
+               <strong>AI Action:</strong> Recommend rooms based on capacity constraints automatically.
+            </p>
+            <a
+              href="{{ url_for('views.ai_scheduling_tool') }}"
+              class="btn btn-info text-white w-100"
+              >Launch Tool</a
+            >
+          </div>
+        </div>
+    </div>
+    
+    <div class="col-md-12">
+        <div class="card shadow-sm bg-light border-0">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <span>🤖 Need quick answers about system status? Try the <strong>AI Assistant</strong>.</span>
+                <a href="{{ url_for('views.ai_chatbot') }}" class="btn btn-sm btn-primary">Open Chatbot</a>
+            </div>
+        </div>
+    </div>
+
+  </div>
+  <div class="container-fluid bg-gradient-to-b" style="height: 150px"></div>
+</div>
+{% endblock %}

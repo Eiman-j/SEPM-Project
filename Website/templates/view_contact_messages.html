@@ -1,0 +1,55 @@
+{% extends 'base.html' %} {% block content %}
+<div class="container mt-5">
+  <a href="{{ url_for('views.admin_portal') }}" class="btn btn-secondary mb-4"
+    >Back</a
+  >
+
+  <h3 class="mb-3">Contact Us Messages</h3>
+  <div class="custom-table-wrapper mb-5">
+    <table class="table custom-table table-striped text-center">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Sender</th>
+          <th>Email</th>
+          <th>Message</th>
+          <th>Time</th>
+          <th>Status</th>
+          <th>Mark as Seen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for message in messages %}
+        <tr class="{% if not message.seen %}table-warning{% endif %}">
+          <td>{{ loop.index }}</td>
+          <td>{{ message.name }}</td>
+          <td>{{ message.email }}</td>
+          <td>{{ message.content }}</td>
+          <td>{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            {% if message.seen %}
+            <span class="text-success font-weight-bold">Seen</span>
+            {% else %}
+            <span class="text-danger font-weight-bold">Unseen</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if not message.seen %}
+            <form
+              method="POST"
+              action="{{ url_for('views.mark_message_seen', message_id=message.id) }}"
+            >
+              <button class="btn btn-sm btn-success">Mark as Seen</button>
+            </form>
+            {% else %}
+            <i class="text-muted">✓</i>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="container-fluid bg-gradient-to-b" style="height: 300px"></div>
+</div>
+{% endblock %}

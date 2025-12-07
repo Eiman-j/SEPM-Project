@@ -1,0 +1,85 @@
+{% extends 'base.html' %} {% block content %}
+<div class="container" style="margin-top: 40px">
+  <h1 class="text-center mb-4">Admin Dashboard: Room Booking Statistics</h1>
+
+  <!-- Filter Form -->
+  <form method="get" class="container mb-4">
+    <div class="row justify-content-center align-items-end g-4">
+      <div class="col-md-3">
+        <label for="user_type" class="form-label fw-semibold">User Type</label>
+        <select name="user_type" id="user_type" class="form-select">
+          <option value="">All</option>
+          <option value="student">Student</option>
+          <option value="faculty">Faculty</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label for="date" class="form-label fw-semibold">From Date</label>
+        <input type="date" name="date" id="date" class="form-control" />
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary">Apply Filters</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- User Type Chart -->
+  <div class="chart-container mb-5" style="max-width: 700px; margin: 0 auto">
+    <canvas id="userTypeChart"></canvas>
+  </div>
+
+  <!-- Room Popularity Chart -->
+  <div class="chart-container mb-5" style="max-width: 700px; margin: 0 auto">
+    <canvas id="roomPopularityChart"></canvas>
+  </div>
+
+  <!-- Back Button -->
+  <div class="text-center mt-4">
+    <a href="{{ url_for('views.admin_portal') }}" class="btn btn-secondary"
+      >Back</a
+    >
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const userTypeChart = new Chart(document.getElementById('userTypeChart'), {
+      type: 'bar',
+      data: {
+          labels: ['Students', 'Faculty', 'Admins'],
+          datasets: [{
+              label: 'Bookings by User Type',
+              data: {{ user_type_data | safe }},
+              backgroundColor: ['#3498db', '#2ecc71', '#f39c12'],
+              borderWidth: 1
+          }]
+      },
+      options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+      }
+  });
+
+  const roomPopularityChart = new Chart(document.getElementById('roomPopularityChart'), {
+      type: 'pie',
+      data: {
+          labels: {{ room_labels | safe }},
+          datasets: [{
+              label: 'Most Booked Rooms',
+              data: {{ room_data | safe }},
+              backgroundColor: [
+                  '#e74c3c', '#8e44ad', '#3498db', '#1abc9c', '#f1c40f', '#e67e22'
+              ],
+              hoverOffset: 4
+          }]
+      },
+      options: {
+          responsive: true
+      }
+  });
+</script>
+{% endblock %}

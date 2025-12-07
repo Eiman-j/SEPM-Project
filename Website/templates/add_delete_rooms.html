@@ -1,0 +1,109 @@
+{% extends "base.html" %} {% block title %}Manage Rooms{% endblock %} {% block
+content %}
+
+<div class="container mt-5 text-white">
+  <h2 class="text-center mb-5">Manage Rooms</h2>
+
+  <!-- Add Room Form -->
+  <div class="glass-form mb-5">
+    <h4 class="text-center mb-4">Add Room</h4>
+    <form method="POST" action="{{ url_for('views.add_room') }}">
+      <div class="form-group mb-3">
+        <label for="room_name">Room Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="room_name"
+          name="room_name"
+          required
+          placeholder="e.g., Smart Lab 1"
+        />
+      </div>
+      <div class="form-group mb-3">
+        <label for="capacity">Capacity</label>
+        <input
+          type="number"
+          class="form-control"
+          id="capacity"
+          name="capacity"
+          required
+          placeholder="e.g., 50"
+        />
+      </div>
+      <div class="form-group mb-3">
+        <label for="location">Location</label>
+        <input
+          type="text"
+          class="form-control"
+          id="location"
+          name="location"
+          required
+          placeholder="e.g., Ground Floor"
+        />
+      </div>
+      <div class="form-group mb-4">
+        <label for="amenities">Amenities</label>
+        <input
+          type="text"
+          class="form-control"
+          id="amenities"
+          name="amenities"
+          required
+          placeholder="e.g., Projector, AC"
+        />
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Add Room</button>
+    </form>
+  </div>
+
+  <!-- Delete Room Form -->
+  <div class="glass-form mb-5">
+    <h4 class="text-center mb-4">Delete Room</h4>
+    <form method="POST" action="{{ url_for('views.delete_room') }}">
+      <div class="form-group mb-3">
+        <label for="room_id">Room ID</label>
+        <input
+          type="number"
+          class="form-control"
+          id="room_id"
+          name="room_id"
+          required
+          placeholder="Enter room ID"
+        />
+      </div>
+      <button type="submit" class="btn btn-danger w-100">Delete Room</button>
+    </form>
+  </div>
+
+  <!-- Room Table -->
+  <h4 class="text-center mb-3">Current Rooms</h4>
+  <table class="styled-table mb-4">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Capacity</th>
+        <th>Location</th>
+        <th>Amenities</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for room in rooms %}
+      <tr>
+        <td>{{ room.id }}</td>
+        <td>{{ room.name }}</td>
+        <td>{{ room.capacity }}</td>
+        <td>{{ room.location }}</td>
+        <td>{{ room.amenities }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="text-center">
+    <a href="{{ url_for('views.home') }}" class="btn btn-secondary"
+      >Back to Home</a
+    >
+  </div>
+</div>
+{% endblock %}

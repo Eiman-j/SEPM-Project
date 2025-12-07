@@ -1,0 +1,138 @@
+{% extends "base.html" %} {% block title %}Login | Smart Classroom{% endblock %}
+{% block content %}
+<style>
+  .login-container {
+    min-height: 80vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 50px;
+    animation: fadeIn 1s ease-in-out;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.9); /* Transparent white */
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px); /* Glass effect */
+    animation: slideIn 0.6s ease-out;
+  }
+
+  .login-card h2 {
+    font-weight: bold;
+    color: #333;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    color: #555;
+  }
+
+  .form-control {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 1rem;
+    box-shadow: none;
+    font-size: 16px;
+  }
+
+  .form-control:focus {
+    border-color: #6a11cb;
+    box-shadow: 0 0 5px rgba(106, 17, 203, 0.8);
+  }
+
+  .btn-dark {
+    background-color: #5b68b6;
+    border-color: #5b68b6;
+    color: rgb(244, 246, 248);
+    font-weight: 600;
+    padding: 10px;
+    width: 100%;
+  }
+
+  .btn-dark:hover {
+    background-color: #0a305f;
+    border-color: #0a305f;
+  }
+
+  .text-center a {
+    color: #0a305f;
+  }
+
+  .text-center a:hover {
+    text-decoration: underline;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<div class="login-container">
+  <div class="login-card">
+    <h2 class="text-center mb-4">Login to Smart Classroom</h2>
+    <form method="POST">
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input
+          type="email"
+          class="form-control"
+          id="email"
+          name="email"
+          placeholder="Enter email"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          class="form-control"
+          id="password"
+          name="password"
+          placeholder="Password"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="role">Role</label>
+        <select class="form-control" id="role" name="role" required>
+          <option value="">Select your role</option>
+          <option value="student">Student</option>
+          <option value="faculty">Faculty</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="text-center">
+        <button type="submit" class="btn btn-dark mt-3">Login</button>
+      </div>
+    </form>
+    <div class="text-center mt-3">
+      <small>
+        Don't have an account?
+        <a href="{{ url_for('auth.sign_up') }}">Sign up</a>
+      </small>
+    </div>
+  </div>
+</div>
+{% endblock %}

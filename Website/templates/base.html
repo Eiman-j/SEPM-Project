@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Smart Classroom{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- FontAwesome and Boxicons -->
+    <link
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- AOS Animation CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css"
+      rel="stylesheet"
+    />
+
+    <!-- Custom CSS -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='stylesheet.css') }}"
+    />
+
+    {% block extra_styles %}{% endblock %}
+  </head>
+
+  <body>
+    <!-- Navbar -->
+    <nav
+      class="navbar navbar-expand-lg navbar-dark"
+      style="background-color: #cdd0db"
+      data-aos="fade-down"
+    >
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('views.home') }}">
+          <img
+            src="{{ url_for('static', filename='graduation6.png') }}"
+            alt="Logo"
+            width="350"
+            height="100"
+            class="d-inline-block align-top"
+            data-aos="zoom-in"
+            data-aos-duration="1500"
+          />
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('views.home') }}">Home</a>
+            </li>
+            {% if current_user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+            </li>
+            {% if current_user.role == 'admin' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('views.admin_portal') }}"
+                >Admin Portal</a
+              >
+            </li>
+            {% elif current_user.role == 'faculty' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('views.faculty_portal') }}"
+                >Teacher Portal</a
+              >
+            </li>
+            {% elif current_user.role == 'student' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('views.student_portal') }}"
+                >Student Portal</a
+              >
+            </li>
+            {% endif %} {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.sign_up') }}"
+                >Signup</a
+              >
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+      <div
+        class="alert alert-{{ category }} alert-dismissible fade show"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <!-- Main Content -->
+    {% block content %}
+    <section class="hero-section d-flex align-items-center" data-aos="fade-in">
+      <div class="container-fluid">
+        <div class="row align-items-center">
+          <!-- Text Column -->
+          <div class="col-md-6 text-center text-md-start text-white">
+            <h1 class="display-2 fw-bold" data-aos="fade-right">
+              Welcome to the Smart Classroom Portal
+            </h1>
+            <p class="lead mt-4" data-aos="fade-right" data-aos-delay="200">
+              A centralized platform to simplify teaching and learning with
+              innovation at your fingertips.
+            </p>
+          </div>
+
+          <!-- Image Column -->
+          <div class="col-md-6 text-center" data-aos="fade-up">
+            <img
+              src="{{ url_for('static', filename='hero-image.png') }}"
+              alt="Hero Image"
+              class="img-fluid hero-image"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Us -->
+    <!-- About Us Section -->
+    <div class="about-us" data-aos="fade-up">
+      <div class="container">
+        <h2 class="text-center">About Us</h2>
+        <p class="lead text-center">
+          The Smart Classroom is designed to transform the way we interact with
+          educational technology. Our platform enhances learning by providing a
+          centralized space for managing classrooms, scheduling classes, and
+          utilizing resources efficiently.
+        </p>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <section id="features" class="py-5">
+      <div class="container">
+        <h2 class="text-center" data-aos="zoom-in">Features</h2>
+        <div class="row">
+          <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Room Management</h5>
+                <p class="card-text">
+                  Easily manage classrooms, assign resources, and track usage.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Class Scheduling</h5>
+                <p class="card-text">
+                  Schedule classes, track attendance, and manage student
+                  interactions.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Resource Allocation</h5>
+                <p class="card-text">
+                  Allocate and manage classroom resources for seamless teaching.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section
+      id="contact"
+      class="py-5"
+      style="background-color: #0f2b47"
+      data-aos="fade-up"
+    >
+      <div class="container">
+        <h2 class="text-center" style="color: #f6f6f6">Contact Us</h2>
+        <form action="{{ url_for('views.contact') }}" method="POST">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <input
+                type="text"
+                class="form-control"
+                name="first_name"
+                placeholder="Your Name"
+                required
+              />
+            </div>
+            <div class="col-md-6 mb-3">
+              <input
+                type="email"
+                class="form-control"
+                name="email"
+                placeholder="Your Email"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-group mb-3">
+            <textarea
+              class="form-control"
+              rows="4"
+              name="mssg"
+              placeholder="Your Message"
+              required
+            ></textarea>
+          </div>
+          <button type="submit" class="btn btn-light btn-lg w-100">
+            Send Message
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+      <div class="container text-center">
+        <p>&copy; 2025 Smart Classroom | All Rights Reserved</p>
+        <div>
+          <a href="#" class="text-white me-3">Facebook</a>
+          <a href="#" class="text-white me-3">Twitter</a>
+          <a href="#" class="text-white">Instagram</a>
+        </div>
+      </div>
+    </footer>
+    {% endblock %}
+
+    <!-- JS Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script>
+      AOS.init();
+    </script>
+
+    {% block javascript %}
+    <script
+      type="text/javascript"
+      src="{{ url_for('static', filename='index.js') }}"
+    ></script>
+    {% endblock %}
+  </body>
+</html>

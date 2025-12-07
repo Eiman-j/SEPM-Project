@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <a href="{{ url_for('views.admin_portal') }}" class="btn btn-outline-secondary mb-4">← Back to Admin Portal</a>
+    <h1 class="text-center text-dark mb-4">Automated Maintenance Alerts</h1>
+    
+    <div class="card shadow-lg">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">⚠️ AI-Flagged Issues</h5>
+        </div>
+        <div class="card-body">
+            <p class="card-text mb-4">The AI analyzes incoming user feedback for keywords like "broken", "wifi", or "projector" to flag recurring facility issues.</p>
+            
+            {% if alerts %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Severity</th>
+                                <th>Issue Content</th>
+                                <th>Reported By</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alert in alerts %}
+                            <tr>
+                                <td>
+                                    {% if alert.is_critical %}
+                                        <span class="badge bg-danger">Critical</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Routine</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ alert.content }}</td>
+                                <td>{{ alert.sender_name }}</td>
+                                <td>
+                                    <a href="{{ url_for('views.view_contact_messages') }}" class="btn btn-sm btn-outline-dark">Review Message</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-success text-center">
+                    No critical maintenance issues detected in current feedback.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

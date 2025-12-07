@@ -1,0 +1,128 @@
+{% extends 'base.html' %} 
+{% block title %}Student Portal{% endblock %} 
+{% block content %}
+<div class="container mt-5">
+  <div class="text-center mb-5">
+    <h2 class="fw-bold">Welcome, {{ current_user.first_name }}!</h2>
+    <p class="text-muted">
+      You are logged in as <strong>Student</strong>. Manage your system using
+      the tools below.
+    </p>
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    
+    <div class="col-12 text-start mb-2">
+        <h4 class="border-bottom pb-2">📅 Standard Booking</h4>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">View All Rooms</h5>
+          <p class="card-text">
+            Browse and manage all rooms currently in the system.
+          </p>
+          <a
+            href="{{ url_for('views.view_rooms') }}"
+            class="btn btn-outline-primary w-100"
+            >View Rooms</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Manual Requisition</h5>
+          <p class="card-text">Manually browse the schedule and select a specific time slot.</p>
+          <a
+            href="{{ url_for('views.bookings') }}"
+            class="btn btn-outline-success w-100"
+            >New Request</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Your Requests</h5>
+          <p class="card-text">
+            Check the status of your submitted room requests.
+          </p>
+          <a
+            href="{{ url_for('views.view_my_bookings') }}"
+            class="btn btn-outline-secondary w-100"
+            >View Requests</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 text-start mb-2 mt-4">
+        <h4 class="border-bottom pb-2">🤖 AI Power Tools</h4>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-info h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-info">Smart Scheduling</h5>
+            <p class="card-text">
+              Let AI find the perfect room for you based on capacity and time.
+            </p>
+            <a
+              href="{{ url_for('views.ai_scheduling_tool') }}"
+              class="btn btn-info text-white w-100"
+              >Find Me a Room</a
+            >
+          </div>
+        </div>
+      </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-primary h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-primary">AI Assistant</h5>
+            <p class="card-text">
+              Chat with our bot to check availability or get help quickly.
+            </p>
+            <a
+              href="{{ url_for('views.ai_chatbot') }}"
+              class="btn btn-primary w-100"
+              >Chat Now</a
+            >
+          </div>
+        </div>
+      </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-warning h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-warning">Availability Insights</h5>
+            <p class="card-text">
+              View forecasts on busy times to plan your bookings better.
+            </p>
+            <a
+              href="{{ url_for('views.ai_availability_insights') }}"
+              class="btn btn-warning text-white w-100"
+              >View Trends</a
+            >
+          </div>
+        </div>
+      </div>
+
+  </div>
+
+  <div class="row mt-5 mb-5">
+      <div class="col-12 text-center">
+        <p class="text-muted">Facing issues or have suggestions?</p>
+        <a href="{{ url_for('views.contact') }}" class="btn btn-link">Submit Feedback</a>
+      </div>
+  </div>
+
+  <div class="container-fluid bg-gradient-to-b" style="height: 100px"></div>
+</div>
+{% endblock %}

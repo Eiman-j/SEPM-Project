@@ -1,0 +1,89 @@
+{% extends "base.html" %} {% block title %}Available Rooms{% endblock %} {%
+block content %}
+<div class="container my-5">
+  <!-- Back Button -->
+  <div class="mb-4">
+    <a
+      href="{% if user.role == 'admin' %}
+               {{ url_for('views.admin_portal') }}
+            {% elif user.role == 'student' %}
+               {{ url_for('views.student_portal') }}
+            {% elif user.role == 'faculty' %}
+               {{ url_for('views.faculty_portal') }}
+            {% else %}
+               {{ url_for('views.home') }}
+            {% endif %}"
+      class="btn btn-outline-secondary"
+    >
+      ← Back
+    </a>
+  </div>
+
+  <!-- Title -->
+  <h2 class="text-center mb-4">Room Directory</h2>
+
+  <!-- Filter Form -->
+  <form
+    method="GET"
+    action="{{ url_for('views.view_rooms') }}"
+    class="row g-3 mb-4"
+  >
+    <div class="col-md-3">
+      <label for="capacity" class="form-label">Min Capacity</label>
+      <input
+        type="number"
+        class="form-control"
+        name="capacity"
+        id="capacity"
+        min="1"
+        value="{{ selected_filters.capacity }}"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label for="location" class="form-label">Location</label>
+      <input
+        type="text"
+        class="form-control"
+        name="location"
+        id="location"
+        value="{{ selected_filters.location }}"
+      />
+    </div>
+
+    <div class="col-md-3 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+    </div>
+  </form>
+
+  <!-- Rooms Table -->
+  <div class="custom-table-wrapper mb-5">
+    <table class="table table-striped custom-table text-center align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Room Name</th>
+          <th>Capacity</th>
+          <th>Location</th>
+          <th>Amenities</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for room in rooms %}
+        <tr>
+          <td>{{ room.room_name }}</td>
+          <td>{{ room.capacity }}</td>
+          <td>{{ room.location }}</td>
+          <td>
+            {% if room.amenities %}
+            <span class="badge bg-success">{{ room.amenities }}</span>
+            {% else %}
+            <span class="badge bg-secondary">None</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

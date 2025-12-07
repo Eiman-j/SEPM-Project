@@ -1,0 +1,64 @@
+{% extends "base.html" %} {% block content %}
+<div class="container py-5">
+  <h2 class="text-center mb-4">Pending Bookings</h2>
+  <div class="table-responsive">
+    <div class="custom-table-wrapper mb-5"></div>
+    <table class="table table-striped custom-table align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th>User</th>
+          <th>Room</th>
+          <th>Time Slot</th>
+          <th>Booking Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for booking in bookings %}
+        <tr>
+          <td>{{ booking.user.first_name }} {{ booking.user.last_name }}</td>
+          <td>{{ booking.room.room_name }}</td>
+          <td>
+            {% if booking.room_timeslot and booking.room_timeslot.timeslot %} {{
+            booking.room_timeslot.timeslot.start_time.strftime('%H:%M') }} - {{
+            booking.room_timeslot.timeslot.end_time.strftime('%H:%M') }} {% else
+            %}
+            <span class="text-muted">Time Slot Not Set</span>
+            {% endif %}
+          </td>
+          <td>{{ booking.booking_date.strftime('%Y-%m-%d') }}</td>
+          <td>
+            <!-- Approve Button -->
+            <form
+              action="{{ url_for('views.handle_approval', booking_id=booking.booking_id, action='approve') }}"
+              method="POST"
+              style="display: inline"
+            >
+              <button type="submit" class="btn btn-success btn-sm">
+                Approve
+              </button>
+            </form>
+
+            <!-- Deny Button -->
+            <form
+              action="{{ url_for('views.handle_approval', booking_id=booking.booking_id, action='deny') }}"
+              method="POST"
+              style="display: inline"
+            >
+              <button type="submit" class="btn btn-danger btn-sm">Deny</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </div>
+  <div class="text-center mt-4">
+    <a href="{{ url_for('views.admin_portal') }}" class="btn btn-primary"
+      >← Back to Dashboard</a
+    >
+  </div>
+  <div class="container-fluid bg-gradient-to-b" style="height: 30px"></div>
+</div>
+{% endblock %}

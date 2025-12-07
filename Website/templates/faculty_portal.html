@@ -1,0 +1,137 @@
+{% extends 'base.html' %} 
+{% block title %}Faculty Dashboard{% endblock %} 
+{% block content %}
+<div class="container mt-5">
+  <div class="text-center mb-5">
+    <h2 class="fw-bold">Welcome, {{ current_user.first_name }} 👋</h2>
+    <p class="text-muted">
+      You are logged in as <strong>Faculty</strong>. Manage your system using
+      the tools below.
+    </p>
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    
+    <div class="col-12 text-start mb-2">
+        <h4 class="border-bottom pb-2 text-dark">📅 Classroom Management</h4>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">View All Rooms</h5>
+          <p class="card-text text-muted">
+            Browse and check availability of all rooms currently in the system.
+          </p>
+          <a
+            href="{{ url_for('views.view_rooms') }}"
+            class="btn btn-outline-primary w-100"
+            >View Rooms</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Manual Requisition</h5>
+          <p class="card-text text-muted">Browse the schedule manually to select a specific time slot.</p>
+          <a
+            href="{{ url_for('views.bookings') }}"
+            class="btn btn-outline-success w-100"
+            >Book a Room</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title">My Bookings</h5>
+            <p class="card-text text-muted">
+              View the status of your previous room requisitions.
+            </p>
+            <a
+              href="{{ url_for('views.view_my_bookings') }}"
+              class="btn btn-outline-secondary w-100"
+              >Check Status</a
+            >
+          </div>
+        </div>
+      </div>
+
+    <div class="col-12 text-start mb-2 mt-4">
+        <h4 class="border-bottom pb-2 text-primary">🤖 Intelligent Assistance</h4>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-info h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-info">Smart Scheduling</h5>
+            <p class="card-text small">
+              Let AI find the best room for your class based on capacity.
+            </p>
+            <a
+              href="{{ url_for('views.ai_scheduling_tool') }}"
+              class="btn btn-info text-white w-100"
+              >Auto-Recommend</a
+            >
+          </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-warning h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-warning">Demand Insights</h5>
+            <p class="card-text small">
+              View usage forecasts to avoid scheduling conflicts.
+            </p>
+            <a
+              href="{{ url_for('views.ai_availability_insights') }}"
+              class="btn btn-warning text-white w-100"
+              >View Trends</a
+            >
+          </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-danger h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-danger">Facility Issues</h5>
+            <p class="card-text small">
+              See AI-flagged maintenance issues (e.g., broken projectors).
+            </p>
+            <a
+              href="{{ url_for('views.ai_maintenance_alerts') }}"
+              class="btn btn-danger text-white w-100"
+              >View Alerts</a
+            >
+          </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-primary h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title text-primary">AI Assistant</h5>
+            <p class="card-text small">
+              Quickly ask questions about room rules or availability.
+            </p>
+            <a
+              href="{{ url_for('views.ai_chatbot') }}"
+              class="btn btn-primary w-100"
+              >Chat Now</a
+            >
+          </div>
+        </div>
+    </div>
+
+  </div>
+  
+  <div class="container-fluid bg-gradient-to-b" style="height: 100px"></div>
+</div>
+{% endblock %}

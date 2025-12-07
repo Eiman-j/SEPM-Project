@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-dark">Smart Scheduling Tool</h1>
+        <a href="{{ url_for('views.home') }}" class="btn btn-outline-secondary">← Back to Dashboard</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-lg p-4 h-100">
+                <h3 class="card-title mb-3">Find the Perfect Room</h3>
+                <p class="text-muted">Enter your requirements, and our AI will analyze capacity, equipment, and historical data to recommend the best available room.</p>
+                
+                <form method="POST" action="{{ url_for('views.ai_scheduling_tool') }}">
+                    <div class="mb-3">
+                        <label for="course_name" class="form-label">Course / Event Name</label>
+                        <input type="text" class="form-control" id="course_name" name="course_name" placeholder="e.g., Intro to AI" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="preferred_date" class="form-label">Preferred Date</label>
+                        <input type="date" class="form-control" id="preferred_date" name="preferred_date" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="preferred_time" class="form-label">Preferred Time</label>
+                        <input type="time" class="form-control" id="preferred_time" name="preferred_time" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Get Recommendation</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            {% if recommendation %}
+            <div class="card shadow-lg p-4 border-success h-100">
+                <h3 class="card-title text-success">✨ Recommendation Found</h3>
+                <hr>
+                <div class="py-3">
+                    <h4 class="display-6">{{ recommendation.room_name }}</h4>
+                    <span class="badge bg-info text-dark mb-3">Capacity: {{ recommendation.capacity }}</span>
+                    
+                    <p class="lead fs-6"><strong>Why this room?</strong></p>
+                    <p class="fst-italic text-muted">"{{ recommendation.reason }}"</p>
+                    
+                    {% if recommendation.available_slots %}
+                    <div class="alert alert-light mt-3">
+                        <strong>Available Slot:</strong> {{ recommendation.available_slots[0] }}
+                    </div>
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('views.view_rooms') }}" class="btn btn-success mt-auto">Proceed to Booking</a>
+            </div>
+            {% else %}
+            <div class="card shadow-sm p-5 h-100 d-flex align-items-center justify-content-center bg-light text-center">
+                <h4 class="text-muted">No recommendation generated yet.</h4>
+                <p class="text-muted small">Fill out the form to see AI suggestions here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

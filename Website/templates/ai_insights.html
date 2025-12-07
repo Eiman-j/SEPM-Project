@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <a href="{{ url_for('views.home') }}" class="btn btn-outline-secondary mb-4">← Back to Dashboard</a>
+    <h1 class="text-center text-dark mb-4">Predictive Availability Insights</h1>
+
+    <div class="row g-4">
+        <div class="col-md-12">
+            <div class="card shadow-lg border-primary">
+                <div class="card-body text-center p-5">
+                    <h2 class="card-title text-primary">Future Demand Forecast</h2>
+                    <p class="display-6 my-4">{{ insights.forecast }}</p>
+                    <p class="text-muted">This prediction is based on historical booking patterns and semester schedules.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-dark text-white">Most Popular Rooms</div>
+                <ul class="list-group list-group-flush">
+                    {% for room in insights.top_rooms %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ room.room_name }}
+                        <span class="badge bg-primary rounded-pill">{{ room.booking_count }} Bookings</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">No booking data available yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow h-100 bg-light">
+                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                    <h5 class="card-title text-muted">Pending Administrative Actions</h5>
+                    <h1 class="display-1 fw-bold text-warning">{{ insights.pending_approvals }}</h1>
+                    <p class="card-text">Approvals waiting for review.</p>
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('views.pending_bookings') }}" class="btn btn-warning mt-3">Process Now</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
