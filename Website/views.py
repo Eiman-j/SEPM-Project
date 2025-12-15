@@ -56,7 +56,7 @@ def get_availability_insights():
     # Get top 3 most booked rooms for predictive insight
     room_popularity = (
         db.session.query(Rooms.room_name, func.count(Bookings.booking_id).label('booking_count'))
-        .join(Bookings, Rooms.id == Bookings.r_id)
+        .join(Bookings, Rooms.room_id == Bookings.r_id)
         .group_by(Rooms.room_name)
         .order_by(func.count(Bookings.booking_id).desc())
         .limit(3)

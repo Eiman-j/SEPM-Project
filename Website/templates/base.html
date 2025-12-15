@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Smart Classroom{% endblock %}</title>
 
-    <!-- Bootstrap 5 CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
 
-    <!-- FontAwesome and Boxicons -->
     <link
       href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
       rel="stylesheet"
@@ -21,13 +19,11 @@
       rel="stylesheet"
     />
 
-    <!-- AOS Animation CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css"
       rel="stylesheet"
     />
 
-    <!-- Custom CSS -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='stylesheet.css') }}"
@@ -37,23 +33,13 @@
   </head>
 
   <body>
-    <!-- Navbar -->
     <nav
-      class="navbar navbar-expand-lg navbar-dark"
-      style="background-color: #cdd0db"
+      class="navbar navbar-expand-lg navbar-light apple-nav-brush sticky-top"
       data-aos="fade-down"
     >
       <div class="container">
-        <a class="navbar-brand" href="{{ url_for('views.home') }}">
-          <img
-            src="{{ url_for('static', filename='graduation6.png') }}"
-            alt="Logo"
-            width="350"
-            height="100"
-            class="d-inline-block align-top"
-            data-aos="zoom-in"
-            data-aos-duration="1500"
-          />
+        <a class="navbar-brand apple-logo-brand" href="{{ url_for('views.home') }}">
+          <span class="logo-icon"></span> Smart Classroom
         </a>
         <button
           class="navbar-toggler"
@@ -108,7 +94,6 @@
       </div>
     </nav>
 
-    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %}
     <div class="container mt-3">
@@ -129,24 +114,21 @@
     </div>
     {% endif %} {% endwith %}
 
-    <!-- Main Content -->
     {% block content %}
     <section class="hero-section d-flex align-items-center" data-aos="fade-in">
       <div class="container-fluid">
         <div class="row align-items-center">
-          <!-- Text Column -->
           <div class="col-md-6 text-center text-md-start text-white">
-            <h1 class="display-2 fw-bold" data-aos="fade-right">
+            <h2 class="display-2 fw-bold" data-aos="fade-right">
               Welcome to the Smart Classroom Portal
-            </h1>
+            </h2>
             <p class="lead mt-4" data-aos="fade-right" data-aos-delay="200">
               A centralized platform to simplify teaching and learning with
               innovation at your fingertips.
             </p>
           </div>
 
-          <!-- Image Column -->
-          <div class="col-md-6 text-center" data-aos="fade-up">
+          <div class="col-md-6 text-center hero-image-container" data-aos="fade-up">
             <img
               src="{{ url_for('static', filename='hero-image.png') }}"
               alt="Hero Image"
@@ -157,8 +139,6 @@
       </div>
     </section>
 
-    <!-- About Us -->
-    <!-- About Us Section -->
     <div class="about-us" data-aos="fade-up">
       <div class="container">
         <h2 class="text-center">About Us</h2>
@@ -171,13 +151,12 @@
       </div>
     </div>
 
-    <!-- Features -->
     <section id="features" class="py-5">
       <div class="container">
         <h2 class="text-center" data-aos="zoom-in">Features</h2>
         <div class="row">
           <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
-            <div class="card">
+            <div class="card card-gradient-1 h-100"> 
               <div class="card-body">
                 <h5 class="card-title">Room Management</h5>
                 <p class="card-text">
@@ -187,7 +166,7 @@
             </div>
           </div>
           <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
-            <div class="card">
+            <div class="card card-gradient-2 h-100">
               <div class="card-body">
                 <h5 class="card-title">Class Scheduling</h5>
                 <p class="card-text">
@@ -198,7 +177,7 @@
             </div>
           </div>
           <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
-            <div class="card">
+            <div class="card card-gradient-3 h-100">
               <div class="card-body">
                 <h5 class="card-title">Resource Allocation</h5>
                 <p class="card-text">
@@ -211,15 +190,14 @@
       </div>
     </section>
 
-    <!-- Contact -->
     <section
       id="contact"
       class="py-5"
-      style="background-color: #0f2b47"
+      style="background-color: var(--color-background-light);"
       data-aos="fade-up"
     >
       <div class="container">
-        <h2 class="text-center" style="color: #f6f6f6">Contact Us</h2>
+        <h2 class="text-center" style="color: var(--color-text-primary);">Contact Us</h2>
         <form action="{{ url_for('views.contact') }}" method="POST">
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -250,27 +228,25 @@
               required
             ></textarea>
           </div>
-          <button type="submit" class="btn btn-light btn-lg w-100">
+          <button type="submit" class="btn btn-primary btn-lg w-100">
             Send Message
           </button>
         </form>
       </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-white py-4">
+    <footer class="apple-footer-brush py-4">
       <div class="container text-center">
         <p>&copy; 2025 Smart Classroom | All Rights Reserved</p>
         <div>
-          <a href="#" class="text-white me-3">Facebook</a>
-          <a href="#" class="text-white me-3">Twitter</a>
-          <a href="#" class="text-white">Instagram</a>
+          <a href="#" class="footer-link">Facebook</a>
+          <a href="#" class="footer-link">Twitter</a>
+          <a href="#" class="footer-link">Instagram</a>
         </div>
       </div>
     </footer>
     {% endblock %}
 
-    <!-- JS Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     <script>

@@ -1,164 +1,132 @@
-/* General Styles */
+/* =================================================================
+   1. GLOBAL STYLES (APPLE AESTHETIC BRUSH-UP)
+   ================================================================= */
+
+:root {
+  /* Apple-Inspired Colors */
+  --color-text-primary: #1d1d1f; /* Near black */
+  --color-text-secondary: #424245; /* Dark gray */
+  --color-link-blue: #0071e3; /* Signature blue */
+  --color-background-white: #ffffff;
+  --color-background-light: #f5f5f7; /* Light gray for sections/footer */
+}
+
+/* Typography Overhaul: Use System Fonts */
 body {
-  font-family: "Times New Roman", Times, serif !important;
-  line-height: 1.6;
-  background: linear-gradient(135deg, #f3f5f6, #1b3465);
-  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background: var(--color-background-white);
   flex-direction: column;
   display: flex;
 }
-main {
-  flex: 1; /* This allows main content to take up available space */
-}
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: #343a40;
+
+/* Headings: Large, bold, impactful */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-text-primary);
+  font-weight: 600;
 }
 
+/* Standard Links with Hover Effect */
 a {
   text-decoration: none;
-  color: #007bff;
+  color: var(--color-link-blue);
+  transition: color 0.1s ease, transform 0.1s ease; /* Added transform */
 }
 
 a:hover {
-  color: #0056b3;
+  color: var(--color-text-primary);
+  text-decoration: none;
 }
 
-/* Navbar Styles */
-.navbar {
-  background-color: #0f2b47 !important;
+
+/* =================================================================
+  2. NAVBAR STYLES (BRUSH-UP & HOVER)
+  ================================================================= */
+
+.apple-nav-brush {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 5px;
+  padding-bottom: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Very subtle shadow */
 }
 
-.navbar .navbar-brand {
-  font-weight: bold;
-  font-size: 1.5rem;
-}
-
-.navbar .nav-link {
-  color: #ffffff !important;
+.apple-logo-brand {
+  font-weight: 700;
   font-size: 1.1rem;
+  color: var(--color-text-primary) !important;
+  display: flex;
+  align-items: center;
 }
 
-.navbar .nav-link:hover {
-  color: #0e657d !important;
+.apple-logo-brand .logo-icon {
+    font-size: 1.4rem;
+    margin-right: 5px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
 }
 
-/* Main Content Styles */
-#about,
-#features,
-#contact {
-  padding: 60px 0;
+.apple-nav-brush .nav-link {
+  color: var(--color-text-secondary) !important;
+  font-size: 0.9rem;
+  padding: 0 12px;
+  
+  /* UPDATED: Add background-color to the transition property */
+  transition: color 0.1s ease, 
+              opacity 0.1s ease,
+              background-color 0.1s ease; /* Ensure smooth background change */
+              
+  display: inline-block; /* Essential to make background/padding work well */
+  border-radius: 4px; /* Optional: Slight rounding for polish */
 }
 
-#about {
-  background-color: #f1f1f1;
+.apple-nav-brush .nav-link:hover {
+  /* Text color remains or slightly increases */
+  color: var(--color-text-primary) !important; 
+  opacity: 1; /* Make it fully opaque on hover for clarity */
+  
+  /* NEW: Add a subtle, light background color */
+  background-color: rgba(0, 0, 0, 0.05); /* Very light gray/black semi-transparent fill */
 }
-
-.card-title {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-.card-text {
-  font-size: 1rem;
-  color: #000000;
-}
-
-.form-control {
-  border-radius: 0.25rem;
-  box-shadow: none;
-}
-
-.form-control:focus {
-  border-color: #007bff;
-}
-
-.btn-light {
-  background-color: #042948;
-  color: #343a40;
-  font-weight: bold;
-}
-
-.btn-light:hover {
-  background-color: #035f8d;
-}
-
-/* Footer Styles */
-footer {
-  background-color: #cd8e54;
-  color: #ffffff;
-}
-
-footer a {
-  color: #ffffff;
-}
-
-footer a:hover {
-  color: #1d3768;
-}
-
-/* Contact Form Styles */
-form {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-textarea {
-  resize: vertical;
-}
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-  .navbar .nav-link {
-    font-size: 1rem;
-  }
-
-  .card-body {
-    text-align: center;
-  }
-
-  .card {
-    margin-bottom: 20px;
-  }
-}
+/* =================================================================
+   3. HOMEPAGE SECTIONS (FLOATING HERO & GRADIENT CARDS)
+   ================================================================= */
 
 .hero-section {
-  min-height: 110vh; /* Set height */
-  position: relative;
-  overflow: hidden;
-  padding: 50px 0 60px 60px; /* Adjusted left padding */
+    min-height: 80vh;
+    position: relative;
+    overflow: hidden;
+    padding: 50px 0; /* Added padding for better spacing */
+    /* Remove center/flex here to let the container/row handle layout */
+    background-color: var(--color-background-light);
 }
 
-.hero-section .text-white {
-  z-index: 2;
-  position: relative;
-  padding-left: 40px; /* Keep the text left-aligned */
-  margin-top: -150px;
+.hero-section .text-center {
+    color: var(--color-text-primary);
+    z-index: 2;
+    position: relative; /* Ensure text stays on top */
 }
 
-.hero-section h1 {
-  font-size: 4rem; /* Larger welcome text */
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.hero-section p {
-  font-size: 1.5rem;
-  margin-top: 20px;
-  color: #042948;
+/* FIXED: Re-establish Image Container for proper Grid Alignment */
+.hero-image-container {
+    /* Removed position: absolute to respect the Bootstrap col-md-6 grid */
+    position: relative; 
+    width: 100%; /* Occupy the full width of the column */
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px; /* Prevent image from touching edges */
 }
 
 .hero-image {
-  max-width: 150%;
-  height: auto;
-  position: absolute;
-  top: -300px; /* Adjusted for the hero image to move up */
-  right: 50px; /* Move image to the right */
-  animation: float 6s ease-in-out infinite;
+    max-width: 90%; /* Prevent it from being too huge */
+    height: auto;
+    /* This keeps the floating animation working */
+    animation: float 6s ease-in-out infinite;
 }
 
 @keyframes float {
@@ -166,145 +134,105 @@ textarea {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-100px); /* Image floats up */
+    transform: translateY(-20px); /* The levitation effect */
   }
   100% {
     transform: translateY(0px);
   }
 }
-.about-us {
-  padding: 80px 0;
-  text-align: center;
-  opacity: 0;
-  animation: fadeIn 1.5s forwards;
-  margin-top: -200px;
+
+/* FEATURES CARDS - GRADIENT AND HOVER */
+#features .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    color: white;
 }
 
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+#features .card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-.container h2 {
-  font-size: 2.5rem;
-  font-weight: 600;
-  color: black;
+/* GRADIENT COLORS */
+.card-gradient-1 {
+    background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);
+}
+.card-gradient-2 {
+    background: linear-gradient(135deg, #20c997 0%, #007bff 100%);
+}
+.card-gradient-3 {
+    background: linear-gradient(135deg, #fd7e14 0%, #e3003b 100%);
 }
 
-.container p {
-  font-size: 1.2rem;
-  max-width: 800px;
-  margin: 0 auto;
+#features .card-body h5, #features .card-body p {
+    color: white !important;
+}
+#features .card-title {
+    color: white !important;
+    font-size: 1.4rem;
 }
 
-/* Override for Add/Delete Form Section */
-.glass-form {
-  background: rgba(255, 255, 255, 0.05) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 2rem;
-  margin: 3rem auto;
-  max-width: 600px;
-  color: white;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+/* CONTACT BUTTON HOVER */
+#contact .btn-primary {
+    background-color: var(--color-link-blue);
+    border-color: var(--color-link-blue);
+    font-weight: 500;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+#contact .btn-primary:hover {
+    background-color: #0060c0;
+    border-color: #0060c0;
+    transform: scale(0.99);
 }
 
-/* Center everything inside */
-.centered {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
+/* =================================================================
+   4. FOOTER STYLES (BRUSH-UP)
+   ================================================================= */
+
+.apple-footer-brush {
+    background-color: var(--color-background-light) !important;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    padding: 20px 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* Input Styling */
-.glass-form .form-control {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: none;
-}
-.glass-form .form-control::placeholder {
-  color: #ffffff;
-}
-.glass-form .form-control:focus {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+.apple-footer-brush .footer-link {
+    color: var(--color-text-secondary);
+    margin: 0 8px;
+    transition: color 0.1s ease;
 }
 
-/* Buttons */
-.glass-form .btn-primary {
-  background-color: #295bb3;
-  border: none;
-}
-.glass-form .btn-danger {
-  background-color: #b93232;
-  border: none;
-}
-.glass-form .btn-secondary {
-  background-color: #4a4a4a;
-  border: none;
+.apple-footer-brush .footer-link:hover {
+    color: var(--color-text-primary);
+    text-decoration: underline;
 }
 
-.custom-table-wrapper {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
+/* =================================================================
+   5. PORTAL COMPONENT STYLES (BRUSH-UP)
+   ================================================================= */
 
-.custom-table {
-  margin: 0;
-  background-color: #37383b;
-  border-collapse: separate;
-  width: 100%;
-}
-
-.custom-table thead {
-  background-color: #343a40;
-  color: white;
-}
-
-.custom-table thead th:first-child {
-  border-top-left-radius: 12px;
-}
-
-.custom-table thead th:last-child {
-  border-top-right-radius: 12px;
-}
-
-.custom-table tbody tr:last-child td:first-child {
-  border-bottom-left-radius: 12px;
-}
-
-.custom-table tbody tr:last-child td:last-child {
-  border-bottom-right-radius: 12px;
-}
-
-.custom-table tbody tr:hover {
-  background-color: #f9f9f9;
-}
-
-.badge {
-  font-size: 0.85rem;
-  padding: 0.5em 0.75em;
-  border-radius: 0.5rem;
-}
-.custom-table thead {
-  background-color: #1e3a8a; /* Dark blue */
-  color: white;
-}
-
+/* Custom Table Button Hover */
 .custom-schedule-btn {
-  background-color: #1a3470;
-  border-color: #1a3470;
+  background-color: var(--color-link-blue);
+  border-color: var(--color-link-blue);
   color: white;
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
 .custom-schedule-btn:hover {
-  background-color: #95a5cb;
-  border-color: #95a5cb;
-  color: #1a3470;
+  background-color: #0060c0;
+  border-color: #0060c0;
+  transform: translateY(-2px); /* Lift effect */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Glass Form Button Hover */
+.glass-form .btn {
+    transition: transform 0.15s ease;
+}
+.glass-form .btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
 }
