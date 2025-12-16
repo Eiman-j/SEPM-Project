@@ -9,9 +9,121 @@ from sqlalchemy import func
 from . models import Messages
 from . models import Rooms, RoomTimeslot, TimeSlot,Admin_approvals
 from datetime import datetime
-
+from transformers import pipeline # Import Hugging Face pipeline
+import os
 # --- PLACEHOLDER AI FUNCTIONS ---
 # These functions simulate the core AI/ML logic. You will replace the internal content later.
+
+
+print("Loading AI Model... please wait...")
+try:
+    # We use a 'text-generation' pipeline
+    chatbot_pipeline = pipeline("text-generation", model="openai-community/gpt2")
+    print("AI Model Loaded Successfully!")
+except Exception as e:
+    print(f"Error loading model: {e}")
+    chatbot_pipeline = None
+
+# --- AI HELPER FUNCTIONS (CONTEXT FOR CHATBOT) ---
+
+def get_live_availability_context():
+    """
+    Scans the database to create a text summary of specific rooms.
+    GPT-2 has a small context window, so we must be brief.
+    """
+    rooms = Rooms.query.all()
+    # We limit to first 5 rooms to avoid overwhelming GPT-2
+    context_data = "Current Room Status:\n"
+    today = datetime.utcnow().date()
+
+    count = 0
+    for room in rooms:
+        if count > 5: break 
+        
+        # Check bookings
+        slots = RoomTimeslot.query.filter_by(room_id=room.room_id).all()
+        is_free_now = True
+        
+        # Simple check: is there ANY booking for this room today?
+        # (Simplified for GPT-2 brevity)
+        active_booking = Bookings.query.filter_by(r_id=room.room_id, booking_date=today, status='Confirmed').first()
+        
+        status = "OCCUPIED" if active_booking else "FREE"
+        context_data += f"- {room.room_name} is currently {status}.\n"
+        count += 1
+    
+    return context_data
+    """
+    Calculates historical popularity based on total booking counts.
+    Helps the AI recommend 'quiet' vs 'popular' rooms.
+    """
+    # Count total bookings per room
+    stats = (
+        db.session.query(Rooms.room_name, func.count(Bookings.booking_id))
+        .join(Bookings, Rooms.room_id == Bookings.r_id)
+        .group_by(Rooms.room_name)
+        .all()
+    )
+    
+    context_data = "\n--- HISTORICAL POPULARITY CONTEXT ---\n"
+    if not stats:
+        return context_data + "No historical data available yet.\n"
+
+    # Calculate average to define 'High Demand'
+    counts = [s[1] for s in stats]
+    avg_bookings = sum(counts) / len(counts) if counts else 0
+    
+    for room_name, count in stats:
+        demand = "High Demand" if count > avg_bookings else "Low Demand"
+        context_data += f"{room_name}: {demand} ({count} past bookings).\n"
+        
+    return context_data
+
+# --- OTHER AI PLACEHOLDERS (Kept as requested) ---
+
+def get_smart_schedule_recommendation(date_str, preferred_time_str, user_id):
+    """MOCK: Recommendation logic."""
+    return {
+        'room_name': 'Lab 405 (AI Recommended)',
+        'capacity': 30,
+        'reason': 'Optimal size for typical faculty course, and available at the requested time.',
+        'available_slots': ['10:00 - 11:00 AM']
+    }
+
+def analyze_messages_for_alerts():
+    """MOCK: Maintenance alerts logic."""
+    unseen_messages = Messages.query.filter_by(seen=False).all()
+    alerts = []
+    keywords = {'projector', 'wifi', 'broken', 'faulty', 'leak'}
+    
+    for msg in unseen_messages:
+        content_lower = msg.content.lower()
+        if any(keyword in content_lower for keyword in keywords):
+            alerts.append({
+                'message_id': msg.id,
+                'content': msg.content,
+                'sender_name': msg.name,
+                'is_critical': True 
+            })
+    return alerts
+
+def get_availability_insights():
+    """MOCK: Availability insights logic."""
+    room_popularity = (
+        db.session.query(Rooms.room_name, func.count(Bookings.booking_id).label('booking_count'))
+        .join(Bookings, Rooms.room_id == Bookings.r_id)
+        .group_by(Rooms.room_name)
+        .order_by(func.count(Bookings.booking_id).desc())
+        .limit(3)
+        .all()
+    )
+    pending_approvals_count = Admin_approvals.query.filter_by(status='Pending').count()
+    return {
+        'top_rooms': room_popularity,
+        'pending_approvals': pending_approvals_count,
+        'forecast': 'High demand predicted for Wednesdays and Fridays from 9:00 AM to 1:00 PM.'
+    }
+
 
 def get_smart_schedule_recommendation(date_str, preferred_time_str, user_id):
     """
@@ -409,101 +521,49 @@ def view_my_bookings():
     return render_template('student_bookings_status.html', bookings=bookings)
 
 
-@views.route('/ai-scheduling-tool', methods=['GET', 'POST'])
-@login_required
-def ai_scheduling_tool():
-    """
-    Renders the Smart Scheduling page and processes the recommendation request.
-    """
-    recommendation = None
-    
-    if request.method == 'POST':
-        # 1. Get user input from the form
-        course_name = request.form.get('course_name')
-        preferred_date = request.form.get('preferred_date') 
-        preferred_time = request.form.get('preferred_time')
-        
-        if not course_name or not preferred_date or not preferred_time:
-             flash('Please fill in all required fields for the smart schedule request.', 'error')
-             return redirect(url_for('views.ai_scheduling_tool'))
-        
-        # 2. Call the AI logic
-        try:
-            # The AI function returns the best room based on the complex criteria
-            recommendation = get_smart_schedule_recommendation(preferred_date, preferred_time, current_user.id)
-            flash(f"AI Recommended Room: {recommendation['room_name']} ({recommendation['reason']})", 'success')
-            
-            # Optional: Auto-book the recommended slot (if user is faculty/admin)
-            # This is complex and usually done in a separate step or API call
-            
-        except Exception as e:
-            flash(f"An internal error occurred during AI scheduling: {e}", 'error')
-            
-    # 3. Render the template, passing the recommendation data
-    return render_template('ai_scheduling.html', recommendation=recommendation, user=current_user)
-
-
-@views.route('/ai-maintenance-alerts')
-@login_required
-def ai_maintenance_alerts():
-    """
-    Displays the Automated Maintenance Alerts generated by analyzing contact messages.
-    Access restricted to Admins and Faculty.
-    """
-    if current_user.role not in ['admin', 'faculty']:
-        flash('Access denied: Admins and Faculty only.', 'error')
-        return redirect(url_for('views.home'))
-        
-    # Get the AI-analyzed alerts from contact messages
-    maintenance_alerts = analyze_messages_for_alerts()
-    
-    return render_template('ai_maintenance.html', 
-                           alerts=maintenance_alerts, 
-                           user=current_user)
-
-@views.route('/ai-availability-insights')
-@login_required
-def ai_availability_insights():
-    """
-    Displays the Predictive Room Availability Insights and usage statistics.
-    """
-    # Get the statistical data/forecast from the AI placeholder function
-    insights_data = get_availability_insights()
-    
-    return render_template('ai_insights.html', 
-                           insights=insights_data, 
-                           user=current_user)
-
-
-@views.route('/ai-chatbot')
-@login_required
-def ai_chatbot():
-    """
-    Renders the Smart Recommendations (Chatbot) interface.
-    """
-    return render_template('ai_recommendations.html', user=current_user)
-
 @views.route('/api/chatbot-response', methods=['POST'])
 @login_required
 def chatbot_api():
-    """
-    API endpoint for the chatbot to send a message and receive a response.
-    The frontend JS must call this endpoint.
-    """
-    # Ensure content is JSON
     if not request.is_json:
-        return jsonify({"error": "Missing JSON in request"}), 400
+        return jsonify({"error": "Missing JSON"}), 400
         
     user_message = request.json.get('message')
     
-    # Placeholder for actual chatbot logic (e.g., call a large language model API)
-    if 'available' in user_message.lower() or 'free' in user_message.lower():
-        response = "I can check availability. Please specify a room and a time."
-    elif 'help' in user_message.lower():
-        response = "I am a smart recommendation assistant. I can guide you to available rooms or forward you to the Smart Scheduling tool."
-    else:
-        response = f"I am currently processing your request: '{user_message}'. Please try asking about room availability or booking help."
-        
-    return jsonify({'response': response})
+    # 1. Get simple context
+    context = get_live_availability_context()
+    
+    # 2. Format Prompt for GPT-2
+    # GPT-2 is a "completion" engine. We must format it like a script.
+    prompt = f"""
+Database:
+{context}
 
+User: {user_message}
+Assistant:"""
 
+    try:
+        if chatbot_pipeline:
+            # Generate text
+            response = chatbot_pipeline(
+                prompt, 
+                max_new_tokens=40,  # Keep answer short
+                num_return_sequences=1,
+                pad_token_id=50256,
+                truncation=True
+            )
+            
+            # Extract the new text generated (remove the prompt part)
+            full_text = response[0]['generated_text']
+            ai_reply = full_text.replace(prompt, "").strip()
+            
+            # Clean up: GPT-2 sometimes rambles, stop at the first new line or period
+            if "\n" in ai_reply:
+                ai_reply = ai_reply.split("\n")[0]
+        else:
+            ai_reply = "Error: AI model failed to load on server start."
+            
+    except Exception as e:
+        print(f"AI Error: {e}")
+        ai_reply = "I am having trouble thinking right now."
+
+    return jsonify({'response': ai_reply})
