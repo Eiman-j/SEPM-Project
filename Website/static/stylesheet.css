@@ -86,17 +86,17 @@ a:hover {
 .apple-nav-brush .nav-link:hover {
   /* Text color remains or slightly increases */
   color: var(--color-text-primary) !important; 
-  opacity: 1; /* Make it fully opaque on hover for clarity */
+  opacity: 0.7; /* Make it fully opaque on hover for clarity */
   
   /* NEW: Add a subtle, light background color */
-  background-color: rgba(0, 0, 0, 0.05); /* Very light gray/black semi-transparent fill */
+  background-color: rgba(154, 22, 114, 0.05); /* Very light gray/black semi-transparent fill */
 }
 /* =================================================================
    3. HOMEPAGE SECTIONS (FLOATING HERO & GRADIENT CARDS)
    ================================================================= */
 
 .hero-section {
-    min-height: 80vh;
+    min-height: 40vh;
     position: relative;
     overflow: hidden;
     padding: 50px 0; /* Added padding for better spacing */
@@ -108,18 +108,19 @@ a:hover {
     color: var(--color-text-primary);
     z-index: 2;
     position: relative; /* Ensure text stays on top */
+    
 }
 
 /* FIXED: Re-establish Image Container for proper Grid Alignment */
 .hero-image-container {
     /* Removed position: absolute to respect the Bootstrap col-md-6 grid */
     position: relative; 
-    width: 100%; /* Occupy the full width of the column */
+    width: 500px; /* Occupy the full width of the column */
     z-index: 1;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    padding: 20px; /* Prevent image from touching edges */
+    padding: 0px; /* Prevent image from touching edges */
 }
 
 .hero-image {

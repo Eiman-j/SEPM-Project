@@ -92,7 +92,7 @@
               <strong>AI Action:</strong> Scans feedback for words like "broken" or "repair" to flag facility issues.
             </p>
             <a
-              href="{{ url_for('views.ai_maintenance_alerts') }}"
+              href="{{ url_for('views.ai_maintenance') }}"
               class="btn btn-danger text-white w-100"
               >View Alerts</a
             >
@@ -108,7 +108,7 @@
               <strong>AI Action:</strong> Forecasts high-demand times and displays room popularity trends.
             </p>
             <a
-              href="{{ url_for('views.ai_availability_insights') }}"
+              href="{{ url_for('views.ai_insights') }}"
               class="btn btn-warning text-white w-100"
               >View Forecasts</a
             >
@@ -137,7 +137,7 @@
           <div class="card-body text-center">
             <h5 class="card-title text-info">Smart Scheduling</h5>
             <p class="card-text small">
-               <strong>AI Action:</strong> Recommend rooms based on capacity constraints automatically.
+                <strong>AI Action:</strong> Recommend rooms based on capacity constraints automatically.
             </p>
             <a
               href="{{ url_for('views.ai_scheduling_tool') }}"
@@ -152,7 +152,7 @@
         <div class="card shadow-sm bg-light border-0">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <span>🤖 Need quick answers about system status? Try the <strong>AI Assistant</strong>.</span>
-                <a href="{{ url_for('views.ai_chatbot') }}" class="btn btn-sm btn-primary">Open Chatbot</a>
+                <a href="{{ url_for('views.ai_recommendations') }}" class="btn btn-sm btn-primary">Open Chatbot</a>
             </div>
         </div>
     </div>

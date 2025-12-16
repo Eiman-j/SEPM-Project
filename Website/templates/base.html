@@ -39,7 +39,7 @@
     >
       <div class="container">
         <a class="navbar-brand apple-logo-brand" href="{{ url_for('views.home') }}">
-          <span class="logo-icon"></span> Smart Classroom
+          <span class="logo-icon"><img src= "static\logo.png" width="100" height="25"></span>
         </a>
         <button
           class="navbar-toggler"
@@ -118,17 +118,17 @@
     <section class="hero-section d-flex align-items-center" data-aos="fade-in">
       <div class="container-fluid">
         <div class="row align-items-center">
-          <div class="col-md-6 text-center text-md-start text-white">
-            <h2 class="display-2 fw-bold" data-aos="fade-right">
+          <div class="col-6 text-center text-md-start text-white">
+            <h3 class="display-2 fw-bold" data-aos="fade-right">
               Welcome to the Smart Classroom Portal
-            </h2>
-            <p class="lead mt-4" data-aos="fade-right" data-aos-delay="200">
+            </h3>
+            <p style="color: rgb(0, 0, 0)" class="lead mt-4" data-aos="fade-right" data-aos-delay="200">
               A centralized platform to simplify teaching and learning with
               innovation at your fingertips.
             </p>
           </div>
 
-          <div class="col-md-6 text-center hero-image-container" data-aos="fade-up">
+          <div class="col-6 text-center hero-image-container" data-aos="fade-up">
             <img
               src="{{ url_for('static', filename='hero-image.png') }}"
               alt="Hero Image"
