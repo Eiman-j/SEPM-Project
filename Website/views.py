@@ -3,11 +3,26 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 from datetime import datetime
 import random 
-
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from datetime import timedelta
+import matplotlib
+matplotlib.use('Agg') # Required for server-side plotting (fixes "no gui" errors)
+import matplotlib.pyplot as plt
+import io
+import base64
 from . import db
 from .models import Messages, Rooms, Bookings, Users, RoomTimeslot, TimeSlot, Admin_approvals
 
 views = Blueprint('views', __name__)
+load_dotenv()
+# Configure Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('models/gemini-2.5-flash-lite')
 
 # =========================================================
 #  AI HELPER FUNCTIONS (Logic for your 4 AI Features)
@@ -35,7 +50,8 @@ def analyze_messages_for_alerts():
 
 def get_availability_insights():
     """
-    AI INSIGHTS: Aggregates booking data to predict demand and show stats.
+    AI INSIGHTS: Uses Linear Regression to predict demand.
+    Optimized for ALL users (Student/Faculty/Admin).
     """
     # 1. Get Top 3 Popular Rooms
     top_rooms_query = (
@@ -46,22 +62,62 @@ def get_availability_insights():
         .limit(3)
         .all()
     )
-    
-    # Convert query result to list of dicts for the template
     top_rooms = [{'room_name': r[0], 'booking_count': r[1]} for r in top_rooms_query]
-
+    
     # 2. Count Pending Approvals
     pending_count = Admin_approvals.query.filter_by(status='Pending').count()
 
-    # 3. Generate Mock Forecast (In real AI, this would use regression models)
-    forecasts = [
-        "High demand expected next Tuesday between 10 AM and 2 PM.",
-        "Fridays are currently showing low utilization. Good for rescheduling.",
-        "Lab 405 is trending as the most requested room this month."
-    ]
+    # 3. REAL LINEAR REGRESSION FORECAST
+    all_bookings = db.session.query(Bookings.booking_date).all()
     
+    if len(all_bookings) < 5:
+        forecast_msg = "Not enough data yet to predict trends. System needs at least 5 bookings."
+    else:
+        try:
+            # Prepare Data
+            dates = [b[0] for b in all_bookings]
+            df = pd.DataFrame({'date': dates})
+            df['date'] = pd.to_datetime(df['date'])
+            daily_counts = df.groupby('date').size().reset_index(name='count')
+            daily_counts['date_ordinal'] = daily_counts['date'].map(datetime.toordinal)
+            
+            X = daily_counts[['date_ordinal']]
+            y = daily_counts['count']
+            
+            # Train Model
+            model = LinearRegression()
+            model.fit(X, y)
+            
+            # Predict Next Week
+            next_week_date = datetime.utcnow().date() + timedelta(days=7)
+            next_week_ordinal = np.array([[next_week_date.toordinal()]])
+            prediction = model.predict(next_week_ordinal)[0]
+            
+            # Analyze Slope for General Advice
+            slope = model.coef_[0]
+            
+            if slope > 0.1:
+                trend = "RISING SHARPLY"
+                advice = "High traffic expected. We recommend booking at least 3 days in advance."
+            elif slope > 0:
+                trend = "increasing slightly"
+                advice = "Standard availability. Regular booking times recommended."
+            elif slope < -0.1:
+                trend = "DECREASING"
+                advice = "Good availability expected. You should find rooms easily next week."
+            else:
+                trend = "stable"
+                advice = "Demand is consistent. No major booking delays expected."
+                
+            forecast_msg = (f"Market Trend: Demand is {trend}. "
+                            f"Projected usage: ~{int(prediction)} bookings/day next week. {advice}")
+            
+        except Exception as e:
+            print(f"ML Error: {e}")
+            forecast_msg = "Could not generate forecast model due to data inconsistency."
+
     return {
-        'forecast': random.choice(forecasts),
+        'forecast': forecast_msg,
         'top_rooms': top_rooms,
         'pending_approvals': pending_count
     }
@@ -87,39 +143,119 @@ def get_smart_schedule_recommendation(form_data):
     }
 
 # --- Helper for Chatbot API ---
-def get_room_status_summary():
-    rooms = Rooms.query.limit(5).all()
+def get_room_status_context():
+    """
+    Fetches real-time data with Smart Tags AND Room IDs so the AI can 
+    generate direct booking links.
+    """
+    rooms = Rooms.query.all()
     today = datetime.utcnow().date()
-    summary = "Here is the current room status:\n"
+    
+    context_text = "--- CURRENT FACILITY STATUS ---\n"
+    
     for room in rooms:
-        active_booking = Bookings.query.filter_by(r_id=room.room_id, booking_date=today, status='Confirmed').first()
-        status = "Occupied" if active_booking else "Available"
-        summary += f"- {room.room_name}: {status}\n"
-    return summary
+        # 1. Check Booking Status
+        active_booking = Bookings.query.filter_by(
+            r_id=room.room_id, 
+            booking_date=today, 
+            status='Confirmed'
+        ).first()
+        status = "OCCUPIED" if active_booking else "AVAILABLE"
+        
+        # 2. Generate Smart Size Tag
+        if room.capacity < 20:
+            size_tag = "Small (Meetings)"
+        elif room.capacity < 50:
+            size_tag = "Medium (Classes)"
+        else:
+            size_tag = "Large (Events)"
 
-def generate_mock_response(user_message):
-    msg = user_message.lower()
-    if "hello" in msg or "hi" in msg:
-        return "Hello! I am your Smart Classroom Assistant. Ask me about room availability or recommendations."
-    elif "status" in msg or "free" in msg:
-        return get_room_status_summary()
-    elif "recommend" in msg:
-        rec = Rooms.query.first()
-        return f"I recommend {rec.room_name} (Capacity: {rec.capacity}) based on historical usage."
-    elif "maintenance" in msg:
-        return "You can report maintenance issues via the Contact page. Our AI scans these for critical alerts."
+        # 3. Build Context String (CRITICAL: We include room_id here)
+        context_text += (f"- ID: {room.room_id} | "
+                         f"Name: {room.room_name} | "
+                         f"Capacity: {room.capacity} [{size_tag}] | "
+                         f"Location: {room.location} | "
+                         f"Facilities: {room.amenities} | "
+                         f"Status: {status}\n")
+
+    # 4. Add Recent Complaints
+    recent_messages = Messages.query.order_by(Messages.timestamp.desc()).limit(5).all()
+    context_text += "\n--- RECENT MAINTENANCE REPORTS ---\n"
+    if recent_messages:
+        for msg in recent_messages:
+            context_text += f"- Report: {msg.content} (Sender: {msg.name})\n"
     else:
-        return "I'm not sure. Try asking 'Which rooms are free?' or 'Recommend a room'."
+        context_text += "No recent complaints.\n"
+    
+    return context_text
+
+
+def generate_gemini_response(user_message):
+    """
+    Instructions added to generate HTML links for booking.
+    """
+    try:
+        # 1. Get Real-Time Context
+        db_context = get_room_status_context()
+        current_date = datetime.utcnow().strftime("%A, %Y-%m-%d")
+        
+        # 2. Construct the System Prompt
+        prompt = f"""
+        You are a smart Facility Manager AI for a university.
+        
+        SYSTEM CONTEXT:
+        - Today's Date: {current_date}
+        - User Role: {current_user.role if current_user.is_authenticated else 'Guest'}
+        
+        REAL-TIME DATABASE:
+        {db_context}
+        
+        USER REQUEST: "{user_message}"
+        
+        INSTRUCTIONS:
+        1. **Smart Matching**: Suggest rooms based on size tags [Small/Medium/Large] and facilities.
+        2. **Direct Links**: If you recommend an AVAILABLE room, you MUST provide a direct booking link using this EXACT format:
+           <a href="/bookings/room/ROOM_ID_HERE" class="btn btn-sm btn-success">Book ROOM_NAME_HERE</a>
+           
+           Example: If recommending Lab 1 (ID: 5), write: 
+           "I recommend Lab 1. <a href="/bookings/room/5" class="btn btn-sm btn-success">Book Lab 1</a>"
+           
+        3. **Date Logic**: Calculate dates for "next Friday" or "tomorrow" based on today ({current_date}).
+        4. **Conflict Resolution**: If a room is OCCUPIED, suggest an alternative.
+        5. **Maintenance**: Warn users if a recommended room has recent complaints.
+        6. Keep answers concise. Do not use Markdown for the link, use the HTML tag provided above.
+        """
+        
+        # 3. Call Gemini API
+        response = model.generate_content(prompt)
+        return response.text.strip()
+        
+    except Exception as e:
+        print(f"Gemini API Error: {e}")
+        return "I am having trouble connecting to the AI brain right now."
 
 # =========================================================
 #  AI FEATURE ROUTES
 # =========================================================
-
 @views.route('/ai/recommendations')
 @login_required
 def ai_recommendations():
-    """Renders the Chatbot Interface"""
+    """Renders the Chatbot Interface Page"""
     return render_template('ai_recommendations.html', user=current_user)
+
+@views.route('/api/chatbot-response', methods=['POST'])
+@login_required
+def chatbot_api():
+    if not request.is_json:
+        return jsonify({"error": "Missing JSON"}), 400
+        
+    data = request.json
+    user_message = data.get('message', '')
+
+    # Call the new Gemini function
+    ai_reply = generate_gemini_response(user_message)
+
+    return jsonify({'response': ai_reply})
 
 @views.route('/ai/maintenance')
 @login_required
@@ -408,19 +544,3 @@ def view_my_bookings():
     bookings = Bookings.query.filter_by(user_id=current_user.id).order_by(Bookings.booking_date.desc()).all()
     return render_template('student_bookings_status.html', bookings=bookings)
 
-# =========================================================
-#  MOCK CHATBOT API
-# =========================================================
-
-@views.route('/api/chatbot-response', methods=['POST'])
-@login_required
-def chatbot_api():
-    if not request.is_json:
-        return jsonify({"error": "Missing JSON"}), 400
-    data = request.json
-    try:
-        ai_reply = generate_mock_response(data.get('message', ''))
-    except Exception as e:
-        print(f"Mock AI Error: {e}")
-        ai_reply = "I am having trouble accessing the system right now."
-    return jsonify({'response': ai_reply})

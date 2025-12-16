@@ -1,8 +1,8 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} 
+
+{% block content %}
 <div class="container py-5">
-  <a href="{{ url_for('views.home') }}" class="btn btn-outline-secondary mb-4"
-    >← Back to Dashboard</a
-  >
+  <a href="{{ url_for('views.home') }}" class="btn btn-outline-secondary mb-4">← Back to Dashboard</a>
   <h1 class="text-center text-dark mb-4">Smart Recommendations Assistant</h1>
 
   <div class="row justify-content-center">
@@ -12,7 +12,7 @@
           class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
           style="border-radius: 15px 15px 0 0"
         >
-          <span>🤖 Facility Manager AI</span>
+          <span>🤖 Facility Manager AI (Gemini Powered)</span>
           <span class="badge bg-success">Online</span>
         </div>
 
@@ -26,10 +26,10 @@
               class="p-3 bg-white border rounded shadow-sm text-dark"
               style="max-width: 80%; border-radius: 15px !important"
             >
-              <strong>AI:</strong> Hello! I am connected to the live room
-              database. <br />Try asking:
+              <strong>AI:</strong> Hello! I am connected to the live room database.
+              <br />Try asking:
               <em>"Is Lab 405 free right now?"</em> or
-              <em>"I need a quiet room."</em>
+              <em>"Recommend a room for 30 students."</em>
             </div>
           </div>
         </div>
@@ -41,6 +41,7 @@
               id="user-input"
               class="form-control border-primary"
               placeholder="Type your question here..."
+              autocomplete="off"
               onkeypress="handleEnter(event)"
             />
             <button
@@ -58,7 +59,7 @@
 </div>
 
 <style>
-  /* Simple animation for the typing indicator */
+  /* Typing Indicator Animation */
   .typing-dot {
     animation: typing 1.4s infinite ease-in-out both;
     height: 7px;
@@ -68,23 +69,17 @@
     display: inline-block;
     margin: 0 2px;
   }
-  .typing-dot:nth-child(1) {
-    animation-delay: -0.32s;
-  }
-  .typing-dot:nth-child(2) {
-    animation-delay: -0.16s;
-  }
+  .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+  .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 
   @keyframes typing {
-    0%,
-    80%,
-    100% {
-      transform: scale(0);
-    }
-    40% {
-      transform: scale(1);
-    }
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
   }
+  
+  /* Markdown List Styling in Chat */
+  .chat-content ul { padding-left: 20px; margin-bottom: 0; }
+  .chat-content li { margin-bottom: 5px; }
 </style>
 
 <script>
@@ -117,12 +112,16 @@
     scrollToBottom();
 
     try {
-      // 4. Send to Backend
+      // 4. Send to Backend (Using the 'views.chatbot_api' route)
       const response = await fetch("{{ url_for('views.chatbot_api') }}", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message }),
       });
+
+      if (!response.ok) {
+        throw new Error(`Server Error: ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -136,14 +135,17 @@
         appendMessage("ai", data.response);
       }
     } catch (error) {
-      document.getElementById(loadingId).remove();
-      appendMessage("error", "System Error: Could not reach the server.");
+      // Handle Network or Server Errors
+      if(document.getElementById(loadingId)) {
+        document.getElementById(loadingId).remove();
+      }
+      appendMessage("error", "System Error: Unable to reach the AI server.");
       console.error("Error:", error);
     } finally {
       // Re-enable input
       inputField.disabled = false;
       sendBtn.disabled = false;
-      inputField.focus();
+      inputField.focus(); // Focus back on input for fast typing
       scrollToBottom();
     }
   }
@@ -152,18 +154,18 @@
     const chatWindow = document.getElementById("chat-window");
     const msgDiv = document.createElement("div");
 
-    // Format text (convert **bold** to HTML and \n to <br>)
+    // Format text (Handle Gemini's Markdown)
     const formattedText = formatAIResponse(text);
 
     if (sender === "user") {
       msgDiv.className = "d-flex flex-row justify-content-end mb-3";
-      msgDiv.innerHTML = `<div class="p-3 bg-primary text-white shadow-sm" style="max-width: 80%; border-radius: 15px 15px 0 15px;">${formattedText}</div>`;
+      msgDiv.innerHTML = `<div class="p-3 bg-primary text-white shadow-sm chat-content" style="max-width: 80%; border-radius: 15px 15px 0 15px;">${formattedText}</div>`;
     } else if (sender === "error") {
       msgDiv.className = "d-flex flex-row justify-content-start mb-3";
-      msgDiv.innerHTML = `<div class="p-3 bg-danger text-white shadow-sm" style="max-width: 80%; border-radius: 15px 15px 15px 0;">${formattedText}</div>`;
+      msgDiv.innerHTML = `<div class="p-3 bg-danger text-white shadow-sm chat-content" style="max-width: 80%; border-radius: 15px 15px 15px 0;">${formattedText}</div>`;
     } else {
       msgDiv.className = "d-flex flex-row justify-content-start mb-3";
-      msgDiv.innerHTML = `<div class="p-3 bg-white border rounded shadow-sm text-dark" style="max-width: 80%; border-radius: 15px 15px 15px 0;"><strong>AI:</strong> ${formattedText}</div>`;
+      msgDiv.innerHTML = `<div class="p-3 bg-white border rounded shadow-sm text-dark chat-content" style="max-width: 80%; border-radius: 15px 15px 15px 0;"><strong>AI:</strong> ${formattedText}</div>`;
     }
 
     chatWindow.appendChild(msgDiv);
@@ -171,13 +173,25 @@
   }
 
   function formatAIResponse(text) {
-    // 1. Convert newlines to <br>
-    let formatted = text.replace(/\n/g, "<br>");
-    // 2. Convert **text** to <strong>text</strong> (Bold)
+    if (!text) return "";
+    
+    // Allow the specific booking link pattern to pass through, escape others
+    // But for simplicity, if you trust Gemini, you can remove the replacement of < and >
+    // Or just use the text directly if you aren't worried about XSS from your own AI.
+    
+    let formatted = text; 
+
+    // 1. Handle Bullet Points
+    formatted = formatted.replace(/(?:^|\n)[*-] (.*?)(?=\n|$)/g, "<br>• $1");
+
+    // 2. Convert **bold** to <strong>
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+    // 3. Convert newlines to <br>
+    formatted = formatted.replace(/\n/g, "<br>");
+    
     return formatted;
   }
-
   function scrollToBottom() {
     const chatWindow = document.getElementById("chat-window");
     chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -185,7 +199,7 @@
 
   function handleEnter(event) {
     if (event.key === "Enter") {
-      event.preventDefault(); // Prevent form submission if inside a form
+      event.preventDefault(); 
       sendMessage();
     }
   }
