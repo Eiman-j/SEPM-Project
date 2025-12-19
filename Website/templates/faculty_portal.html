@@ -3,10 +3,9 @@
 {% block content %}
 <div class="container mt-5">
   <div class="text-center mb-5">
-    <h2 class="fw-bold">Welcome, {{ current_user.first_name }} </h2>
+    <h2 class="fw-bold">Welcome, {{ current_user.first_name }}!</h2>
     <p class="text-muted">
-      You are logged in as <strong>Faculty</strong>. Manage your system using
-      the tools below.
+      You are logged in as <strong>Faculty</strong>. Manage your classes and check facility status below.
     </p>
   </div>
 
@@ -17,41 +16,41 @@
     </div>
 
     <div class="col-md-4">
-      <div class="card shadow-sm h-100">
+      <div class="card shadow-sm h-100 hover-shadow">
         <div class="card-body text-center">
-          <h5 class="card-title">View All Rooms</h5>
+          <h5 class="card-title fw-bold">View All Rooms</h5>
           <p class="card-text text-muted">
-            Browse and check availability of all rooms currently in the system.
+            Browse directory and check amenities/capacity.
           </p>
           <a
             href="{{ url_for('views.view_rooms') }}"
             class="btn btn-outline-primary w-100"
-            >View Rooms</a
+            >View Directory</a
           >
         </div>
       </div>
     </div>
 
     <div class="col-md-4">
-      <div class="card shadow-sm h-100">
+      <div class="card shadow-sm h-100 hover-shadow">
         <div class="card-body text-center">
-          <h5 class="card-title">Manual Requisition</h5>
-          <p class="card-text text-muted">Browse the schedule manually to select a specific time slot.</p>
+          <h5 class="card-title fw-bold">Book a Room</h5>
+          <p class="card-text text-muted">Manual requisition form for specific dates & times.</p>
           <a
             href="{{ url_for('views.bookings') }}"
             class="btn btn-outline-success w-100"
-            >Book a Room</a
+            >New Request</a
           >
         </div>
       </div>
     </div>
 
     <div class="col-md-4">
-        <div class="card shadow-sm h-100">
+        <div class="card shadow-sm h-100 hover-shadow">
           <div class="card-body text-center">
-            <h5 class="card-title">My Bookings</h5>
+            <h5 class="card-title fw-bold">My Bookings</h5>
             <p class="card-text text-muted">
-              View the status of your previous room requisitions.
+              Track the approval status of your requests.
             </p>
             <a
               href="{{ url_for('views.view_my_bookings') }}"
@@ -67,11 +66,11 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card shadow-sm border-info h-100">
+        <div class="card shadow-sm border-info h-100 hover-shadow">
           <div class="card-body text-center">
             <h5 class="card-title text-info">Smart Scheduling</h5>
             <p class="card-text small">
-              Let AI find the best room for your class based on capacity.
+              AI finds the best room based on class size & gaps.
             </p>
             <a
               href="{{ url_for('views.ai_scheduling_tool') }}"
@@ -83,14 +82,14 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card shadow-sm border-warning h-100">
+        <div class="card shadow-sm border-warning h-100 hover-shadow">
           <div class="card-body text-center">
             <h5 class="card-title text-warning">Demand Insights</h5>
             <p class="card-text small">
-              View usage forecasts to avoid scheduling conflicts.
+              View usage forecasts to plan exam schedules.
             </p>
             <a
-              href="{{ url_for('views.get_availability_insights') }}"
+              href="{{ url_for('views.ai_insights') }}"
               class="btn btn-warning text-white w-100"
               >View Trends</a
             >
@@ -99,32 +98,32 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card shadow-sm border-danger h-100">
+        <div class="card shadow-sm border-primary h-100 hover-shadow">
           <div class="card-body text-center">
-            <h5 class="card-title text-danger">Facility Issues</h5>
+            <h5 class="card-title text-primary">AI Assistant</h5>
             <p class="card-text small">
-              See AI-flagged maintenance issues (e.g., broken projectors).
+              Ask "CampusBuddy" about room rules or help.
             </p>
             <a
-              href="{{ url_for('views.ai_maintenance_alerts') }}"
-              class="btn btn-danger text-white w-100"
-              >View Alerts</a
+              href="{{ url_for('views.ai_recommendations') }}"
+              class="btn btn-primary w-100"
+              >Chat Now</a
             >
           </div>
         </div>
     </div>
-
+    
     <div class="col-md-3">
-        <div class="card shadow-sm border-primary h-100">
+        <div class="card shadow-sm border-danger h-100 hover-shadow">
           <div class="card-body text-center">
-            <h5 class="card-title text-primary">AI Assistant</h5>
+            <h5 class="card-title text-danger">Report Issue</h5>
             <p class="card-text small">
-              Quickly ask questions about room rules or availability.
+              Submit feedback about broken facility items.
             </p>
             <a
-              href="{{ url_for('views.ai_chatbot') }}"
-              class="btn btn-primary w-100"
-              >Chat Now</a
+              href="{{ url_for('views.contact') }}"
+              class="btn btn-danger text-white w-100"
+              >Contact Admin</a
             >
           </div>
         </div>
@@ -134,4 +133,12 @@
   
   <div class="container-fluid bg-gradient-to-b" style="height: 100px"></div>
 </div>
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important;
+        transition: all 0.3s ease;
+    }
+</style>
 {% endblock %}

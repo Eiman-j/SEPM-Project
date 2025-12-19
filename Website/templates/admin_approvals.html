@@ -1,6 +1,13 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} 
+{% block content %}
 <div class="container py-5">
-  <h2 class="text-center mb-4">Pending Bookings</h2>
+  <h2 class="text-center mb-4">Pending Bookings (New System)</h2>
+  
+  {% if bookings|length == 0 %}
+    <div class="alert alert-success text-center">
+        No pending approvals found. All caught up!
+    </div>
+  {% else %}
   <div class="table-responsive">
     <div class="custom-table-wrapper mb-5"></div>
     <table class="table table-striped custom-table align-middle text-center">
@@ -8,29 +15,38 @@
         <tr>
           <th>User</th>
           <th>Room</th>
-          <th>Time Slot</th>
-          <th>Booking Date</th>
-          <th>Action</th>
+          <th>Date & Time</th>
+          <th>Application Reason</th> <th>Action</th>
         </tr>
       </thead>
       <tbody>
         {% for booking in bookings %}
         <tr>
-          <td>{{ booking.user.first_name }} {{ booking.user.last_name }}</td>
-          <td>{{ booking.room.room_name }}</td>
           <td>
-            {% if booking.room_timeslot and booking.room_timeslot.timeslot %} {{
-            booking.room_timeslot.timeslot.start_time.strftime('%H:%M') }} - {{
-            booking.room_timeslot.timeslot.end_time.strftime('%H:%M') }} {% else
-            %}
-            <span class="text-muted">Time Slot Not Set</span>
-            {% endif %}
+              <div class="fw-bold">{{ booking.user.first_name }}</div>
+              <small class="text-muted">{{ booking.user.email }}</small>
           </td>
-          <td>{{ booking.booking_date.strftime('%Y-%m-%d') }}</td>
+
+          <td>{{ booking.room.name }}</td>
+
           <td>
-            <!-- Approve Button -->
+            <div class="fw-bold">{{ booking.booking_date.strftime('%Y-%m-%d') }}</div>
+            <div class="text-primary">
+                {{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}
+            </div>
+          </td>
+
+          <td class="text-start">
+             {% if booking.reason %}
+                <em>"{{ booking.reason }}"</em>
+             {% else %}
+                <span class="text-muted fst-italic">No reason provided</span>
+             {% endif %}
+          </td>
+
+          <td>
             <form
-              action="{{ url_for('views.handle_approval', booking_id=booking.booking_id, action='approve') }}"
+              action="{{ url_for('views.handle_approval', booking_id=booking.id, action='approve') }}"
               method="POST"
               style="display: inline"
             >
@@ -39,13 +55,14 @@
               </button>
             </form>
 
-            <!-- Deny Button -->
             <form
-              action="{{ url_for('views.handle_approval', booking_id=booking.booking_id, action='deny') }}"
+              action="{{ url_for('views.handle_approval', booking_id=booking.id, action='deny') }}"
               method="POST"
               style="display: inline"
             >
-              <button type="submit" class="btn btn-danger btn-sm">Deny</button>
+              <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to deny this request?');">
+                  Deny
+              </button>
             </form>
           </td>
         </tr>
@@ -53,11 +70,10 @@
       </tbody>
     </table>
   </div>
-  </div>
+  {% endif %}
+
   <div class="text-center mt-4">
-    <a href="{{ url_for('views.admin_portal') }}" class="btn btn-primary"
-      >← Back to Dashboard</a
-    >
+    <a href="{{ url_for('views.admin_portal') }}" class="btn btn-primary">← Back to Dashboard</a>
   </div>
   <div class="container-fluid bg-gradient-to-b" style="height: 30px"></div>
 </div>

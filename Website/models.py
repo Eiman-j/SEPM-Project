@@ -81,3 +81,42 @@ class Admin_approvals(db.Model):
 
     booking = db.relationship('Bookings', back_populates='approvals')
     reviewer = db.relationship('Users', back_populates='approvals_reviewed')
+
+    # --- NEW MODELS FOR DATE-BASED BOOKING SYSTEM ---
+
+class RoomsList(db.Model):
+    __tablename__ = 'rooms_list'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    capacity = db.Column(db.Integer, default=50)
+    is_active = db.Column(db.Boolean, default=True)
+    amenities = db.Column(db.Text, nullable=True)
+    location = db.Column(db.String(100), nullable=True)
+    
+    # Relationships
+    schedules = db.relationship('SemesterSchedule', backref='room', lazy=True)
+    bookings = db.relationship('BookingsNew', backref='room', lazy=True)
+
+class SemesterSchedule(db.Model):
+    __tablename__ = 'semester_schedule'
+    id = db.Column(db.Integer, primary_key=True)
+    room_id = db.Column(db.Integer, db.ForeignKey('rooms_list.id'), nullable=False)
+    day_of_week = db.Column(db.String(15), nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    course_name = db.Column(db.String(100), nullable=True)
+
+class BookingsNew(db.Model):
+    __tablename__ = 'bookings_new'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    room_id = db.Column(db.Integer, db.ForeignKey('rooms_list.id'), nullable=False)
+    booking_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    status = db.Column(db.String(20), default='Pending') # 'Confirmed', 'Pending', 'Rejected'
+    reason = db.Column(db.Text, nullable=True) # For > 6 PM applications
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship to User (Assuming your Users table is named 'users')
+    user = db.relationship('Users', backref='new_bookings')

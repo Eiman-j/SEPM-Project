@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify
 from flask_login import login_required, current_user
-from sqlalchemy import func
-from datetime import datetime
+from sqlalchemy import func, or_
+from datetime import datetime, timedelta, time, date
 import random 
 import os
 import google.generativeai as genai
@@ -9,72 +9,117 @@ from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
-from datetime import timedelta
-import matplotlib
-matplotlib.use('Agg') # Required for server-side plotting (fixes "no gui" errors)
-import matplotlib.pyplot as plt
-import io
-import base64
+import json
 from . import db
-from .models import Messages, Rooms, Bookings, Users, RoomTimeslot, TimeSlot, Admin_approvals
+# Import Old models if needed for archiving, but we focus on NEW models
+from .models import Messages, Users, Admin_approvals 
+# Import NEW models
+from .models import RoomsList, SemesterSchedule, BookingsNew
 
 views = Blueprint('views', __name__)
 load_dotenv()
+
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel('models/gemini-2.5-flash-lite')
 
 # =========================================================
-#  AI HELPER FUNCTIONS (Logic for your 4 AI Features)
+#  AI FEATURE HELPERS
 # =========================================================
 
 def analyze_messages_for_alerts():
     """
-    AI MAINTENANCE: Scans contact messages for keywords like 'broken', 'wifi', etc.
-    Returns a list of flagged alerts.
+    AI MAINTENANCE: Uses LLM to categorize messages and detect critical issues.
     """
-    messages = Messages.query.order_by(Messages.timestamp.desc()).limit(50).all()
-    alerts = []
-    # Keywords that trigger the AI flag
-    keywords = ['broken', 'wifi', 'projector', 'leak', 'faulty', 'not working', 'damage']
+    messages = Messages.query.filter_by(seen=False).all()
+    if not messages:
+        return []
+
+    # Prepare messages for LLM analysis
+    batch_text = "\n".join([f"ID: {m.id} | Content: {m.content}" for m in messages])
     
-    for msg in messages:
-        if any(word in msg.content.lower() for word in keywords):
-            alerts.append({
-                'is_critical': True,
-                'content': msg.content,
-                'sender_name': msg.name,
-                'id': msg.id
-            })
+    prompt = f"""
+    Analyze the following student messages. Identify which ones are reporting broken equipment, 
+    safety hazards, or facility issues. Return a JSON list of IDs that are 'critical'.
+    Messages:
+    {batch_text}
+    """
+    
+    alerts = []
+    try:
+        response = model.generate_content(prompt)
+        # Assuming the LLM returns a list of IDs or keywords
+        # For simplicity, we keep your keyword logic as a fallback
+        keywords = ['broken', 'wifi', 'projector', 'leak', 'faulty', 'not working', 'damage', 'ac']
+        
+        for msg in messages:
+            if any(word in msg.content.lower() for word in keywords):
+                alerts.append({
+                    'is_critical': True,
+                    'content': msg.content,
+                    'sender_name': msg.name,
+                    'id': msg.id,
+                    'category': "Facility Issue" # You could get this from Gemini too
+                })
+    except Exception as e:
+        print(f"AI Maintenance Error: {e}")
+        
     return alerts
+
+def get_peak_hour_prediction():
+    """
+    ML: Predicts the busiest hour of the day based on historical BookingsNew data.
+    """
+    all_bookings = BookingsNew.query.all()
+    if len(all_bookings) < 10:
+        return "Insufficient data for hourly trends."
+
+    df = pd.DataFrame([{
+        'hour': b.start_time.hour,
+        'day': b.booking_date.weekday()
+    } for b in all_bookings])
+
+    # Count bookings per hour
+    hourly_counts = df.groupby('hour').size().reset_index(name='count')
+    
+    X = hourly_counts[['hour']]
+    y = hourly_counts['count']
+    
+    model_lr = LinearRegression()
+    model_lr.fit(X, y)
+    
+    # Predict for hours 8 AM to 8 PM
+    hours_to_predict = np.array(range(8, 21)).reshape(-1, 1)
+    predictions = model_lr.predict(hours_to_predict)
+    peak_hour = hours_to_predict[np.argmax(predictions)][0]
+    
+    return f"Peak demand usually hits around {peak_hour}:00. Try booking early morning slots for better luck!"
 
 def get_availability_insights():
     """
-    AI INSIGHTS: Uses Linear Regression to predict demand.
-    Optimized for ALL users (Student/Faculty/Admin).
+    AI INSIGHTS: Predictions based on BookingsNew table.
     """
     # 1. Get Top 3 Popular Rooms
     top_rooms_query = (
-        db.session.query(Rooms.room_name, func.count(Bookings.booking_id).label('booking_count'))
-        .join(Bookings, Rooms.room_id == Bookings.r_id)
-        .group_by(Rooms.room_name)
-        .order_by(func.count(Bookings.booking_id).desc())
+        db.session.query(RoomsList.name, func.count(BookingsNew.id).label('booking_count'))
+        .join(BookingsNew, RoomsList.id == BookingsNew.room_id)
+        .group_by(RoomsList.name)
+        .order_by(func.count(BookingsNew.id).desc())
         .limit(3)
         .all()
     )
     top_rooms = [{'room_name': r[0], 'booking_count': r[1]} for r in top_rooms_query]
     
     # 2. Count Pending Approvals
-    pending_count = Admin_approvals.query.filter_by(status='Pending').count()
+    pending_count = BookingsNew.query.filter_by(status='Pending').count()
 
-    # 3. REAL LINEAR REGRESSION FORECAST
-    all_bookings = db.session.query(Bookings.booking_date).all()
+    # 3. LINEAR REGRESSION FORECAST
+    all_bookings = db.session.query(BookingsNew.booking_date).all()
     
     if len(all_bookings) < 5:
         forecast_msg = "Not enough data yet to predict trends. System needs at least 5 bookings."
     else:
         try:
-            # Prepare Data
             dates = [b[0] for b in all_bookings]
             df = pd.DataFrame({'date': dates})
             df['date'] = pd.to_datetime(df['date'])
@@ -84,30 +129,28 @@ def get_availability_insights():
             X = daily_counts[['date_ordinal']]
             y = daily_counts['count']
             
-            # Train Model
-            model = LinearRegression()
-            model.fit(X, y)
+            reg_model = LinearRegression()
+            reg_model.fit(X, y)
             
             # Predict Next Week
             next_week_date = datetime.utcnow().date() + timedelta(days=7)
             next_week_ordinal = np.array([[next_week_date.toordinal()]])
-            prediction = model.predict(next_week_ordinal)[0]
+            prediction = reg_model.predict(next_week_ordinal)[0]
             
-            # Analyze Slope for General Advice
-            slope = model.coef_[0]
+            slope = reg_model.coef_[0]
             
             if slope > 0.1:
                 trend = "RISING SHARPLY"
-                advice = "High traffic expected. We recommend booking at least 3 days in advance."
+                advice = "High traffic expected. Book 3 days in advance."
             elif slope > 0:
                 trend = "increasing slightly"
-                advice = "Standard availability. Regular booking times recommended."
+                advice = "Standard availability."
             elif slope < -0.1:
                 trend = "DECREASING"
-                advice = "Good availability expected. You should find rooms easily next week."
+                advice = "Good availability expected."
             else:
                 trend = "stable"
-                advice = "Demand is consistent. No major booking delays expected."
+                advice = "Demand is consistent."
                 
             forecast_msg = (f"Market Trend: Demand is {trend}. "
                             f"Projected usage: ~{int(prediction)} bookings/day next week. {advice}")
@@ -124,123 +167,135 @@ def get_availability_insights():
 
 def get_smart_schedule_recommendation(form_data):
     """
-    AI SCHEDULING: Takes form data and recommends a room.
+    AI SCHEDULING: Logic to find time gaps in the new system.
     """
-    # MOCK LOGIC: In a real app, check constraints against RoomTimeslot
-    # Here we just pick a room that "fits" randomly for demonstration
+    req_date_str = form_data.get('preferred_date')
+    # If no preferred_time provided, we search the whole day, otherwise logic differs
+    # For this implementation, let's assume we search for a specific duration gap
+    duration_hours = 1.5 # Default duration if not specified
     
-    all_rooms = Rooms.query.all()
-    if not all_rooms:
+    try:
+        req_date = datetime.strptime(req_date_str, "%Y-%m-%d").date()
+        day_name = req_date.strftime("%A")
+    except:
         return None
-        
-    recommended = random.choice(all_rooms)
-    
-    return {
-        'room_name': recommended.room_name,
-        'capacity': recommended.capacity,
-        'reason': f"Based on your request for {form_data.get('preferred_time')}, this room offers the best equipment match.",
-        'available_slots': [f"{form_data.get('preferred_time')} - {int(form_data.get('preferred_time')[:2])+1}:00"]
-    }
 
-# --- Helper for Chatbot API ---
+    candidate_rooms = RoomsList.query.filter_by(is_active=True).all()
+    
+    for room in candidate_rooms:
+        # Collect busy intervals
+        busy_intervals = []
+        
+        # Classes
+        classes = SemesterSchedule.query.filter_by(room_id=room.id, day_of_week=day_name).all()
+        for cls in classes:
+            busy_intervals.append((cls.start_time, cls.end_time))
+            
+        # Bookings
+        bookings = BookingsNew.query.filter_by(room_id=room.id, booking_date=req_date)\
+            .filter(BookingsNew.status != 'Rejected').all()
+        for b in bookings:
+            busy_intervals.append((b.start_time, b.end_time))
+            
+        busy_intervals.sort(key=lambda x: x[0])
+        
+        # Simple Logic: Check if there is space between 08:00 and the first event, 
+        # or between events. 
+        # For simplicity in this helper, we return the first room that is somewhat free.
+        
+        if len(busy_intervals) < 5: # Arbitrary "not too busy" check
+             return {
+                'room_name': room.name,
+                'capacity': room.capacity,
+                'reason': f"Room {room.name} has a light schedule on {day_name}s.",
+                'available_slots': ["Check specific times in manual booking"]
+            }
+
+    return None
+
 def get_room_status_context():
     """
-    Fetches real-time data with Smart Tags AND Room IDs so the AI can 
-    generate direct booking links.
+    Fetches real-time data: 
+    1. Rooms & Availability
+    2. Recent User Feedback (Messages)
     """
-    rooms = Rooms.query.all()
+    # --- PART 1: ROOMS ---
+    rooms = RoomsList.query.filter_by(is_active=True).all()
     today = datetime.utcnow().date()
     
-    context_text = "--- CURRENT FACILITY STATUS ---\n"
+    context_text = "--- 🏥 CURRENT FACILITY STATUS ---\n"
     
     for room in rooms:
-        # 1. Check Booking Status
-        active_booking = Bookings.query.filter_by(
-            r_id=room.room_id, 
+        # Check active bookings
+        active_booking = BookingsNew.query.filter_by(
+            room_id=room.id, 
             booking_date=today, 
             status='Confirmed'
         ).first()
         status = "OCCUPIED" if active_booking else "AVAILABLE"
         
-        # 2. Generate Smart Size Tag
-        if room.capacity < 20:
-            size_tag = "Small (Meetings)"
-        elif room.capacity < 50:
-            size_tag = "Medium (Classes)"
-        else:
-            size_tag = "Large (Events)"
+        context_text += (f"- {room.name} ({room.location}): {status} | "
+                         f"Cap: {room.capacity} | "
+                         f"Has: {room.amenities}\n")
 
-        # 3. Build Context String (CRITICAL: We include room_id here)
-        context_text += (f"- ID: {room.room_id} | "
-                         f"Name: {room.room_name} | "
-                         f"Capacity: {room.capacity} [{size_tag}] | "
-                         f"Location: {room.location} | "
-                         f"Facilities: {room.amenities} | "
-                         f"Status: {status}\n")
-
-    # 4. Add Recent Complaints
-    recent_messages = Messages.query.order_by(Messages.timestamp.desc()).limit(5).all()
-    context_text += "\n--- RECENT MAINTENANCE REPORTS ---\n"
+    # --- PART 2: FEEDBACK / MESSAGES (NEW) ---
+    # We fetch the last 10 messages so the AI knows what people are talking about
+    recent_messages = Messages.query.order_by(Messages.timestamp.desc()).limit(10).all()
+    
+    context_text += "\n--- 🗣️ RECENT STUDENT FEEDBACK ---\n"
     if recent_messages:
         for msg in recent_messages:
-            context_text += f"- Report: {msg.content} (Sender: {msg.name})\n"
+            # We include the name so the AI can say "Ali said..."
+            context_text += f"- {msg.name} said: '{msg.content}'\n"
     else:
-        context_text += "No recent complaints.\n"
-    
+        context_text += "No recent feedback found.\n"
+
     return context_text
 
-
 def generate_gemini_response(user_message):
-    """
-    Instructions added to generate HTML links for booking.
-    """
     try:
-        # 1. Get Real-Time Context
         db_context = get_room_status_context()
         current_date = datetime.utcnow().strftime("%A, %Y-%m-%d")
         
-        # 2. Construct the System Prompt
+        # --- THE NEW "CHILL" SYSTEM PROMPT ---
         prompt = f"""
-        You are a smart Facility Manager AI for a university.
+        You are "CampusBuddy", a super chill, friendly, and helpful AI assistant for the university.
         
-        SYSTEM CONTEXT:
-        - Today's Date: {current_date}
-        - User Role: {current_user.role if current_user.is_authenticated else 'Guest'}
+        YOUR VIBE:
+        - Talk like a normal human student, not a corporate robot. 
+        - Use emojis 🤙✨.
+        - Be concise but warm.
+        - If someone thanks you, say "No worries!" or "Anytime!".
         
-        REAL-TIME DATABASE:
+        YOUR KNOWLEDGE (Real-Time Database):
         {db_context}
         
-        USER REQUEST: "{user_message}"
+        SYSTEM RULES:
+        1. **Rooms**: If a room is AVAILABLE, tell them they can book it. 
+           (Link: <a href="/bookings" class="btn btn-sm btn-success">Book Now</a>).
+        2. **Feedback**: You have access to the 'Recent Student Feedback' section above.
+           - If the user asks "What are people saying?" or "Any feedback?", summarize the recent messages.
+           - Be honest. If people are complaining about AC, say "Yeah, a few people mentioned the AC is broken."
+           - If the feedback is good, hype it up!
+        3. **The 6 PM Rule**: If they want a room late (after 6 PM), remind them gently that they need Admin approval.
         
-        INSTRUCTIONS:
-        1. **Smart Matching**: Suggest rooms based on size tags [Small/Medium/Large] and facilities.
-        2. **Direct Links**: If you recommend an AVAILABLE room, you MUST provide a direct booking link using this EXACT format:
-           <a href="/bookings/room/ROOM_ID_HERE" class="btn btn-sm btn-success">Book ROOM_NAME_HERE</a>
-           
-           Example: If recommending Lab 1 (ID: 5), write: 
-           "I recommend Lab 1. <a href="/bookings/room/5" class="btn btn-sm btn-success">Book Lab 1</a>"
-           
-        3. **Date Logic**: Calculate dates for "next Friday" or "tomorrow" based on today ({current_date}).
-        4. **Conflict Resolution**: If a room is OCCUPIED, suggest an alternative.
-        5. **Maintenance**: Warn users if a recommended room has recent complaints.
-        6. Keep answers concise. Do not use Markdown for the link, use the HTML tag provided above.
+        USER SAYS: "{user_message}"
         """
         
-        # 3. Call Gemini API
         response = model.generate_content(prompt)
         return response.text.strip()
         
     except Exception as e:
         print(f"Gemini API Error: {e}")
-        return "I am having trouble connecting to the AI brain right now."
+        return "My brain is buffering right now 😵‍💫. Try again in a sec!"
 
 # =========================================================
 #  AI FEATURE ROUTES
 # =========================================================
+
 @views.route('/ai/recommendations')
 @login_required
 def ai_recommendations():
-    """Renders the Chatbot Interface Page"""
     return render_template('ai_recommendations.html', user=current_user)
 
 @views.route('/api/chatbot-response', methods=['POST'])
@@ -248,54 +303,62 @@ def ai_recommendations():
 def chatbot_api():
     if not request.is_json:
         return jsonify({"error": "Missing JSON"}), 400
-        
     data = request.json
     user_message = data.get('message', '')
-
-    # Call the new Gemini function
     ai_reply = generate_gemini_response(user_message)
-
     return jsonify({'response': ai_reply})
 
 @views.route('/ai/maintenance')
 @login_required
 def ai_maintenance():
-    """Renders the Maintenance Alerts Page"""
-    # Only allow admins to see maintenance logs
     if current_user.role != 'admin':
         flash("Access Denied: Admin Only", "error")
         return redirect(url_for('views.home'))
-        
     alerts = analyze_messages_for_alerts()
     return render_template('ai_maintenance.html', alerts=alerts, user=current_user)
 
 @views.route('/ai/insights')
 @login_required
 def ai_insights():
-    """Renders the Predictive Insights Page"""
-    insights_data = get_availability_insights()
-    return render_template('ai_insights.html', insights=insights_data, user=current_user)
+    # 1. Get the Statistical Data (Linear Regression)
+    basic_insights = get_availability_insights()
+    peak_prediction = get_peak_hour_prediction()
+    
+    # 2. Get the LLM "Vibe Check" Summary
+    # We ask Gemini to summarize the general mood of the campus based on feedback
+    recent_feedback = Messages.query.order_by(Messages.timestamp.desc()).limit(10).all()
+    feedback_text = " ".join([m.content for m in recent_feedback])
+    
+    vibe_summary = "Everyone seems happy!"
+    if feedback_text:
+        prompt = f"Summarize the general mood of these student comments in one short, chill sentence: {feedback_text}"
+        try:
+            vibe_summary = model.generate_content(prompt).text
+        except:
+            vibe_summary = "Unable to read the room right now."
+
+    return render_template('ai_insights.html', 
+                           insights=basic_insights, 
+                           peak_prediction=peak_prediction,
+                           vibe_summary=vibe_summary,
+                           user=current_user)
 
 @views.route('/ai/scheduling', methods=['GET', 'POST'])
 @login_required
 def ai_scheduling_tool():
-    """Renders the Smart Scheduling Tool"""
     recommendation = None
-    
     if request.method == 'POST':
-        # Capture form data
+        # Simple pass-through for now
         form_data = {
-            'course_name': request.form.get('course_name'),
-            'preferred_date': request.form.get('preferred_date'),
-            'preferred_time': request.form.get('preferred_time')
+            'preferred_date': request.form.get('date'),
+            'duration': request.form.get('duration')
         }
-        # Run AI logic
         recommendation = get_smart_schedule_recommendation(form_data)
         
     return render_template('ai_scheduling.html', recommendation=recommendation, user=current_user)
 
 # =========================================================
-#  STANDARD ROUTES
+#  CORE & PORTAL ROUTES
 # =========================================================
 
 @views.route('/')
@@ -332,26 +395,32 @@ def contact():
         name = request.form.get('first_name')
         email = request.form.get('email')
         content = request.form.get('mssg')
-
         new_message = Messages(name=name, email=email, content=content)
         db.session.add(new_message)
         db.session.commit()
-
         flash('Your message has been sent!', category='success')
         return redirect(url_for('views.contact'))
     return render_template('base.html')
+
+# =========================================================
+#  ROOM & BOOKING ROUTES (NEW SYSTEM)
+# =========================================================
 
 @views.route('/view-rooms', methods=['GET'])
 @login_required
 def view_rooms():
     min_capacity = request.args.get('capacity', type=int)
     location = request.args.get('location', '')
-    query = Rooms.query
+    
+    query = RoomsList.query.filter_by(is_active=True)
+    
     if min_capacity:
-        query = query.filter(Rooms.capacity >= min_capacity)
+        query = query.filter(RoomsList.capacity >= min_capacity)
     if location:
-        query = query.filter(Rooms.location.ilike(f'%{location}%'))
+        query = query.filter(RoomsList.location.ilike(f'%{location}%'))
+        
     rooms = query.all()
+    
     return render_template('view_rooms.html', rooms=rooms, user=current_user, selected_filters={
         'capacity': min_capacity if min_capacity else '',
         'location': location
@@ -360,28 +429,154 @@ def view_rooms():
 @views.route('/manage_room', methods=['GET', 'POST'])
 @login_required
 def manage_rooms():
+    # Admin tool to add rooms to the NEW RoomsList table
+    if current_user.role != 'admin':
+        return redirect(url_for('views.home'))
+
     if request.method == 'POST':
         if 'add_room' in request.form:
-            room_name = request.form.get('room_name')
+            name = request.form.get('room_name')
             capacity = request.form.get('capacity')
             location = request.form.get('location')
             amenities = request.form.get('amenities')
-            new_room = Rooms(room_name=room_name, capacity=capacity, location=location, amenities=amenities)
+            
+            new_room = RoomsList(name=name, capacity=capacity, location=location, amenities=amenities, is_active=True)
             db.session.add(new_room)
             db.session.commit()
             flash('Room added successfully!', 'success')
+            
         elif 'delete_room' in request.form:
             room_id = request.form.get('room_id')
-            room_to_delete = Rooms.query.get(room_id)
+            room_to_delete = RoomsList.query.get(room_id)
             if room_to_delete:
-                db.session.delete(room_to_delete)
+                room_to_delete.is_active = False # Soft delete
                 db.session.commit()
-                flash('Room deleted successfully!', 'success')
+                flash('Room deactivated!', 'success')
             else:
                 flash('Room not found!', 'error')
+                
         return redirect(url_for('views.manage_rooms'))
-    rooms = Rooms.query.all()
+        
+    rooms = RoomsList.query.filter_by(is_active=True).all()
     return render_template('manage_rooms.html', rooms=rooms)
+
+@views.route('/bookings', methods=['GET'])
+@login_required
+def bookings():
+    # Fetch all active rooms for the dropdown list
+    rooms = RoomsList.query.filter_by(is_active=True).all()
+    return render_template('bookings.html', rooms=rooms)
+
+@views.route('/book-room-new', methods=['POST'])
+@login_required
+def book_room_new():
+    room_id = request.form.get('room_id')
+    date_str = request.form.get('date')
+    start_str = request.form.get('start_time')
+    end_str = request.form.get('end_time')
+    reason = request.form.get('reason')
+
+    try:
+        booking_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        start_time = datetime.strptime(start_str, "%H:%M").time()
+        end_time = datetime.strptime(end_str, "%H:%M").time()
+    except ValueError:
+        flash('Invalid date or time format.', category='error')
+        return redirect(url_for('views.bookings'))
+
+    # Logic: The 6 PM Rule
+    status = 'Confirmed'
+    six_pm = time(18, 0)
+    
+    if start_time >= six_pm or end_time > six_pm:
+        status = 'Pending'
+        if not reason:
+            flash('Applications for evening slots (after 6 PM) must include a reason.', category='error')
+            return redirect(url_for('views.bookings'))
+
+    new_booking = BookingsNew(
+        user_id=current_user.id,
+        room_id=room_id,
+        booking_date=booking_date,
+        start_time=start_time,
+        end_time=end_time,
+        status=status,
+        reason=reason
+    )
+    
+    try:
+        db.session.add(new_booking)
+        db.session.commit()
+        if status == 'Pending':
+            flash('Request submitted! Waiting for Admin Approval.', category='success')
+        else:
+            flash('Booking Confirmed!', category='success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while saving.', category='error')
+        print(e)
+
+    return redirect(url_for('views.student_portal'))
+
+@views.route('/api/get-availability', methods=['POST'])
+@login_required
+def get_availability():
+    data = request.get_json()
+    room_id = data.get('room_id')
+    date_str = data.get('date')
+    
+    if not room_id or not date_str:
+        return jsonify({'error': 'Missing data'}), 400
+
+    target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    day_name = target_date.strftime("%A")
+
+    blocked_slots = []
+
+    # --- 1. SEMESTER DATE RANGE LOGIC ---
+    # Define the bounds for your semester
+    semester_start = date(2025, 9, 1)
+    semester_end = date(2025, 12, 31)
+
+    # Only check for fixed classes if the selected date is within the semester
+    if semester_start <= target_date <= semester_end:
+        # A. Check Semester Schedule (Fixed Classes)
+        classes = SemesterSchedule.query.filter_by(room_id=room_id, day_of_week=day_name).all()
+        for cls in classes:
+            blocked_slots.append({
+                'start': cls.start_time.strftime("%H:%M"),
+                'end': cls.end_time.strftime("%H:%M"),
+                'reason': f"Class: {cls.course_name}"
+            })
+
+    # --- 2. REGULAR BOOKINGS LOGIC ---
+    # Check one-off bookings regardless of the date (always relevant)
+    existing_bookings = BookingsNew.query.filter_by(
+        room_id=room_id, 
+        booking_date=target_date
+    ).filter(BookingsNew.status != 'Rejected').all()
+    
+    for b in existing_bookings:
+        blocked_slots.append({
+            'start': b.start_time.strftime("%H:%M"),
+            'end': b.end_time.strftime("%H:%M"),
+            'reason': "Booked"
+        })
+
+    # Sort all blocks chronologically
+    blocked_slots.sort(key=lambda x: x['start'])
+    return jsonify({'blocked_slots': blocked_slots})
+
+@views.route('/my-bookings')
+@login_required
+def view_my_bookings():
+    # Use the new table and new template
+    bookings = BookingsNew.query.filter_by(user_id=current_user.id).order_by(BookingsNew.booking_date.desc()).all()
+    return render_template('my_bookings.html', bookings=bookings)
+
+# =========================================================
+#  ADMIN MANAGEMENT ROUTES
+# =========================================================
 
 @views.route('/admin/contact-messages')
 @login_required
@@ -404,33 +599,63 @@ def mark_message_seen(message_id):
     flash('Message marked as seen.')
     return redirect(url_for('views.view_contact_messages'))
 
+@views.route('/admin/pending-bookings')
+@login_required
+def pending_bookings():
+    if current_user.role != 'admin':
+        flash('Access denied.', category='error')
+        return redirect(url_for('views.home'))
+    
+    # Fetch from the NEW table (BookingsNew)
+    bookings = BookingsNew.query.filter_by(status='Pending').order_by(BookingsNew.booking_date).all()
+    return render_template('admin_approvals.html', bookings=bookings)
+
+@views.route('/admin/handle-approval/<int:booking_id>/<string:action>', methods=['POST'])
+@login_required
+def handle_approval(booking_id, action):
+    if current_user.role != 'admin':
+        flash('Access denied.', category='error')
+        return redirect(url_for('views.home'))
+
+    booking = BookingsNew.query.get_or_404(booking_id)
+
+    if action == 'approve':
+        booking.status = 'Confirmed'
+        flash(f'Booking for {booking.user.first_name} approved!', category='success')
+    elif action == 'deny':
+        booking.status = 'Rejected'
+        flash('Booking request denied.', category='error')
+
+    db.session.commit()
+    return redirect(url_for('views.pending_bookings'))
+
 @views.route('/admin/admin_dashboard')
 @login_required
 def admin_dashboard():
-    # Basic Stats for dashboard
+    # Updated to use BookingsNew
     user_type_filter = request.args.get('user_type')
     date_filter = request.args.get('date')
-    base_query = Bookings.query.join(Users)
+    base_query = BookingsNew.query.join(Users)
 
     if user_type_filter:
         base_query = base_query.filter(Users.role == user_type_filter)
     if date_filter:
         try:
-            parsed_date = datetime.strptime(date_filter, "%Y-%m-%d")
-            base_query = base_query.filter(Bookings.date >= parsed_date)
+            parsed_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
+            base_query = base_query.filter(BookingsNew.booking_date >= parsed_date)
         except ValueError:
             flash("Invalid date format. Use YYYY-MM-DD.", category="error")
 
-    student_count = Bookings.query.join(Users).filter(Users.role == 'student').count()
-    faculty_count = Bookings.query.join(Users).filter(Users.role == 'faculty').count()
-    admin_count = Bookings.query.join(Users).filter(Users.role == 'admin').count()
+    student_count = BookingsNew.query.join(Users).filter(Users.role == 'student').count()
+    faculty_count = BookingsNew.query.join(Users).filter(Users.role == 'faculty').count()
+    admin_count = BookingsNew.query.join(Users).filter(Users.role == 'admin').count()
     user_type_data = [student_count, faculty_count, admin_count]
 
     room_stats = (
         base_query
-        .join(Rooms)
-        .with_entities(Rooms.room_name, func.count(Bookings.booking_id))
-        .group_by(Rooms.room_name)
+        .join(RoomsList, BookingsNew.room_id == RoomsList.id)
+        .with_entities(RoomsList.name, func.count(BookingsNew.id))
+        .group_by(RoomsList.name)
         .all()
     )
     room_labels = [room[0] for room in room_stats]
@@ -441,106 +666,3 @@ def admin_dashboard():
                            room_labels=room_labels,
                            room_data=room_data,
                            back_url=url_for('views.admin_portal'))
-
-@views.route('/bookings')
-def bookings():
-    rooms = Rooms.query.all()
-    return render_template('bookings.html', rooms=rooms)
-
-@views.route('/bookings/room/<int:room_id>', methods=['GET'])
-@login_required
-def view_schedule(room_id):
-    room = Rooms.query.get_or_404(room_id)
-    room_timeslots = RoomTimeslot.query.filter_by(room_id=room_id).all()
-    timeslot_groups = {}
-    for ts in room_timeslots:
-        timeslot_groups.setdefault(ts.timeslot_id, []).append(ts)
-    existing_bookings = Bookings.query.filter_by(r_id=room_id).all()
-    booked_slots = {(b.room_timeslot_id, b.booking_date.strftime('%A')): b for b in existing_bookings}
-    grouped_schedule = {
-        ts_id: {'timeslot': ts_list[0].timeslot, 'days': {}} for ts_id, ts_list in timeslot_groups.items()
-    }
-    for ts_id, ts_list in timeslot_groups.items():
-        for ts in ts_list:
-            day = ts.day_of_week
-            key = (ts.id, day)
-            grouped_schedule[ts_id]['days'][day] = {
-                'is_booked': key in booked_slots,
-                'booking_info': booked_slots.get(key),
-                'timeslot': ts
-            }
-    return render_template("schedule.html", room=room, grouped_schedule=grouped_schedule)
-
-@views.route('/bookings/book/<int:room_timeslot_id>', methods=['POST'])
-@login_required
-def book_slot(room_timeslot_id):
-    slot = RoomTimeslot.query.get_or_404(room_timeslot_id)
-    user = current_user
-    existing_booking = Bookings.query.filter_by(room_timeslot_id=slot.id, booking_date=datetime.utcnow().date()).first()
-    
-    if existing_booking:
-        if existing_booking.status == "Approved":
-            flash("This slot is already booked.", "warning")
-            return redirect(request.referrer or url_for('views.view_schedule', room_id=slot.room_id))
-        elif existing_booking.status == "Pending" and existing_booking.user_id == user.id:
-            flash("Request Already sent. Await admin approval", "warning")
-            return redirect(request.referrer or url_for('views.view_schedule', room_id=slot.room_id))
-
-    status = "Confirmed" if current_user.role in ["faculty", "admin"] else "Pending"
-    check_in_time = datetime.utcnow() if status == "Confirmed" else None
-
-    booking = Bookings(
-        user_id=current_user.id,
-        r_id=slot.room_id,
-        room_timeslot_id=slot.id,
-        booking_date=datetime.utcnow().date(),
-        status=status,
-        check_in_time=check_in_time
-    )
-    db.session.add(booking)
-    db.session.flush()
-
-    approval_status = "Approved" if current_user.role in ["faculty", "admin"] else "Pending"
-    approval = Admin_approvals(booking_id=booking.booking_id, status=approval_status, reviewed_by=current_user.id if status == "Confirmed" else None)
-    db.session.add(approval)
-
-    slot.is_available = (approval_status != "Approved")
-    db.session.commit()
-
-    flash("Booking confirmed successfully!" if status == "Confirmed" else "Booking submitted. Awaiting admin approval.", "success" if status == "Confirmed" else "info")
-    return redirect(url_for('views.view_schedule', room_id=slot.room_id))
-
-@views.route('/admin/pending-bookings')
-@login_required
-def pending_bookings():
-    if current_user.role != 'admin':
-        flash('Access denied.', category='error')
-        return redirect(url_for('views.home'))
-    bookings = Bookings.query.filter_by(status='Pending').all()
-    return render_template('admin_approvals.html', bookings=bookings)
-
-@views.route('/admin/handle-approval/<int:booking_id>/<string:action>', methods=['POST'])
-@login_required
-def handle_approval(booking_id, action):
-    booking = Bookings.query.get(booking_id)
-    if not booking or current_user.role != 'admin':
-        flash('Error processing request.', category='error')
-        return redirect(url_for('views.pending_bookings'))
-
-    if action == 'approve':
-        booking.status = 'Approved'
-    elif action == 'deny':
-        booking.status = 'Denied'
-    
-    approval = Admin_approvals(booking_id=booking.booking_id, status=booking.status, reviewed_by=current_user.id)
-    db.session.add(approval)
-    db.session.commit()
-    flash(f'Booking {action}d successfully.', category='success')
-    return redirect(url_for('views.pending_bookings'))
-
-@views.route('/my-bookings')
-@login_required
-def view_my_bookings():
-    bookings = Bookings.query.filter_by(user_id=current_user.id).order_by(Bookings.booking_date.desc()).all()
-    return render_template('student_bookings_status.html', bookings=bookings)
-

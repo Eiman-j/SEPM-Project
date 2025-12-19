@@ -3,61 +3,85 @@
 {% block content %}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="text-dark">Smart Scheduling Tool</h1>
+        <h1 class="text-dark fw-bold">⚡ AI Smart Scheduler</h1>
         <a href="{{ url_for('views.home') }}" class="btn btn-outline-secondary">← Back to Dashboard</a>
     </div>
 
     <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-lg p-4 h-100">
-                <h3 class="card-title mb-3">Find the Perfect Room</h3>
-                <p class="text-muted">Enter your requirements, and our AI will analyze capacity, equipment, and historical data to recommend the best available room.</p>
-                
-                <form method="POST" action="{{ url_for('views.ai_scheduling_tool') }}">
-                    <div class="mb-3">
-                        <label for="course_name" class="form-label">Course / Event Name</label>
-                        <input type="text" class="form-control" id="course_name" name="course_name" placeholder="e.g., Intro to AI" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="preferred_date" class="form-label">Preferred Date</label>
-                        <input type="date" class="form-control" id="preferred_date" name="preferred_date" required>
-                    </div>
+        <div class="col-md-5">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header bg-primary text-white p-4">
+                    <h3 class="card-title mb-0">Find a Time Slot</h3>
+                    <p class="mb-0 small opacity-75">Our AI analyzes semester schedules to find empty gaps.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('views.ai_scheduling_tool') }}">
+                        
+                        <div class="mb-4">
+                            <label for="date" class="form-label fw-bold">Preferred Date</label>
+                            <input type="date" class="form-control form-control-lg" id="date" name="date" required>
+                        </div>
 
-                    <div class="mb-3">
-                        <label for="preferred_time" class="form-label">Preferred Time</label>
-                        <input type="time" class="form-control" id="preferred_time" name="preferred_time" required>
-                    </div>
+                        <div class="mb-4">
+                            <label for="duration" class="form-label fw-bold">Duration Needed (Hours)</label>
+                            <input type="number" class="form-control form-control-lg" id="duration" name="duration" placeholder="e.g. 1.5" step="0.5" min="0.5" required>
+                            <div class="form-text">We will look for a room free for this long.</div>
+                        </div>
 
-                    <button type="submit" class="btn btn-primary w-100">Get Recommendation</button>
-                </form>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">
+                            🔍 Find Free Room
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-7">
             {% if recommendation %}
-            <div class="card shadow-lg p-4 border-success h-100">
-                <h3 class="card-title text-success">✨ Recommendation Found</h3>
-                <hr>
-                <div class="py-3">
-                    <h4 class="display-6">{{ recommendation.room_name }}</h4>
-                    <span class="badge bg-info text-dark mb-3">Capacity: {{ recommendation.capacity }}</span>
+            <div class="card shadow-lg border-0 h-100 animate__animated animate__fadeIn">
+                <div class="card-body p-5 text-center d-flex flex-column justify-content-center">
                     
-                    <p class="lead fs-6"><strong>Why this room?</strong></p>
-                    <p class="fst-italic text-muted">"{{ recommendation.reason }}"</p>
+                    <div class="mb-4">
+                        <span class="badge bg-success px-3 py-2 rounded-pill">✨ Best Match Found</span>
+                    </div>
+
+                    <h2 class="display-5 fw-bold text-dark mb-2">{{ recommendation.room_name }}</h2>
+                    <p class="text-muted mb-4">Capacity: {{ recommendation.capacity }} Students</p>
                     
+                    <div class="alert alert-info border-0 bg-light-info">
+                        <h5 class="alert-heading fw-bold mb-1">AI Reasoning</h5>
+                        <p class="mb-0 fst-italic">"{{ recommendation.reason }}"</p>
+                    </div>
+
                     {% if recommendation.available_slots %}
-                    <div class="alert alert-light mt-3">
-                        <strong>Available Slot:</strong> {{ recommendation.available_slots[0] }}
+                    <div class="my-4">
+                        <h6 class="text-uppercase text-muted fw-bold small">Suggested Time Slot</h6>
+                        <ul class="list-group list-group-flush d-inline-block">
+                            {% for slot in recommendation.available_slots %}
+                                <li class="list-group-item bg-transparent fw-bold fs-5 text-success border-0">
+                                    ⏰ {{ slot }}
+                                </li>
+                            {% endfor %}
+                        </ul>
                     </div>
                     {% endif %}
+
+                    <div class="mt-auto">
+                        <a href="{{ url_for('views.bookings') }}" class="btn btn-success btn-lg px-5">
+                            Book This Slot Now
+                        </a>
+                    </div>
                 </div>
-                <a href="{{ url_for('views.view_rooms') }}" class="btn btn-success mt-auto">Proceed to Booking</a>
             </div>
             {% else %}
-            <div class="card shadow-sm p-5 h-100 d-flex align-items-center justify-content-center bg-light text-center">
-                <h4 class="text-muted">No recommendation generated yet.</h4>
-                <p class="text-muted small">Fill out the form to see AI suggestions here.</p>
+            <div class="card shadow-sm border-0 h-100 bg-light">
+                <div class="card-body p-5 d-flex flex-column align-items-center justify-content-center text-center">
+                    <div class="text-muted mb-3">
+                        <i class="bi bi-robot fs-1"></i>
+                    </div>
+                    <h3 class="text-muted fw-bold">Waiting for input...</h3>
+                    <p class="text-muted mb-0">Enter a date and duration on the left to let the AI scan the schedule for you.</p>
+                </div>
             </div>
             {% endif %}
         </div>

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}My Requests{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>My Booking Requests</h2>
+        <a href="{{ url_for('views.bookings') }}" class="btn btn-primary">+ New Booking</a>
+    </div>
+
+    {% if bookings|length == 0 %}
+        <div class="alert alert-info text-center py-4">
+            <h5>You haven't made any bookings yet.</h5>
+            <p>Go ahead and book a room for your next event!</p>
+        </div>
+    {% else %}
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Room</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                        <tr>
+                            <td class="fw-bold">{{ booking.booking_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</td>
+                            <td>
+                                {{ booking.room.name }}<br>
+                                <small class="text-muted">{{ booking.room.location }}</small>
+                            </td>
+                            <td>
+                                {% if booking.status == 'Confirmed' %}
+                                    <span class="badge bg-success rounded-pill px-3">Confirmed</span>
+                                {% elif booking.status == 'Pending' %}
+                                    <span class="badge bg-warning text-dark rounded-pill px-3">Pending</span>
+                                {% else %}
+                                    <span class="badge bg-danger rounded-pill px-3">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if booking.reason %}
+                                    <span class="text-muted fst-italic">"{{ booking.reason }}"</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

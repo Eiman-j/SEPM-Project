@@ -1,7 +1,9 @@
-{% extends "base.html" %} {% block title %}Available Rooms{% endblock %} {%
-block content %}
+{% extends "base.html" %} 
+{% block title %}Available Rooms{% endblock %} 
+
+{% block content %}
 <div class="container my-5">
-  <!-- Back Button -->
+  
   <div class="mb-4">
     <a
       href="{% if user.role == 'admin' %}
@@ -15,75 +17,113 @@ block content %}
             {% endif %}"
       class="btn btn-outline-secondary"
     >
-      ← Back
+      ← Back to Dashboard
     </a>
   </div>
 
-  <!-- Title -->
-  <h2 class="text-center mb-4">Room Directory</h2>
-
-  <!-- Filter Form -->
-  <form
-    method="GET"
-    action="{{ url_for('views.view_rooms') }}"
-    class="row g-3 mb-4"
-  >
-    <div class="col-md-3">
-      <label for="capacity" class="form-label">Min Capacity</label>
-      <input
-        type="number"
-        class="form-control"
-        name="capacity"
-        id="capacity"
-        min="1"
-        value="{{ selected_filters.capacity }}"
-      />
-    </div>
-
-    <div class="col-md-3">
-      <label for="location" class="form-label">Location</label>
-      <input
-        type="text"
-        class="form-control"
-        name="location"
-        id="location"
-        value="{{ selected_filters.location }}"
-      />
-    </div>
-
-    <div class="col-md-3 d-flex align-items-end">
-      <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
-    </div>
-  </form>
-
-  <!-- Rooms Table -->
-  <div class="custom-table-wrapper mb-5">
-    <table class="table table-striped custom-table text-center align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th>Room Name</th>
-          <th>Capacity</th>
-          <th>Location</th>
-          <th>Amenities</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for room in rooms %}
-        <tr>
-          <td>{{ room.room_name }}</td>
-          <td>{{ room.capacity }}</td>
-          <td>{{ room.location }}</td>
-          <td>
-            {% if room.amenities %}
-            <span class="badge bg-success">{{ room.amenities }}</span>
-            {% else %}
-            <span class="badge bg-secondary">None</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="text-center mb-5">
+    <h2 class="fw-bold">🏫 Room Directory</h2>
+    <p class="text-muted">Find the perfect space for your classes and events.</p>
   </div>
+
+  <div class="card shadow-sm border-0 mb-5 bg-light">
+    <div class="card-body p-4">
+      <form method="GET" action="{{ url_for('views.view_rooms') }}" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label for="capacity" class="form-label fw-bold">Min Capacity</label>
+          <input
+            type="number"
+            class="form-control"
+            name="capacity"
+            id="capacity"
+            min="1"
+            placeholder="e.g. 30"
+            value="{{ selected_filters.capacity }}"
+          />
+        </div>
+
+        <div class="col-md-4">
+          <label for="location" class="form-label fw-bold">Location</label>
+          <input
+            type="text"
+            class="form-control"
+            name="location"
+            id="location"
+            placeholder="e.g. Library"
+            value="{{ selected_filters.location }}"
+          />
+        </div>
+
+        <div class="col-md-4">
+          <button type="submit" class="btn btn-primary w-100">🔍 Apply Filters</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for room in rooms %}
+    <div class="col">
+      <div class="card h-100 shadow-sm border-0 hover-shadow transition-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h4 class="card-title fw-bold text-primary">{{ room.name }}</h4>
+            <span class="badge bg-light text-dark border">{{ room.capacity }} Seats</span>
+          </div>
+          
+          <h6 class="card-subtitle mb-3 text-muted">
+            <i class="bi bi-geo-alt-fill text-danger"></i> {{ room.location }}
+          </h6>
+          
+          <hr>
+          
+          <div class="mb-3">
+            <small class="text-muted d-block mb-1">Amenities:</small>
+            {% if room.amenities %}
+                {% for amenity in room.amenities.split(',') %}
+                    <span class="badge bg-info text-dark opacity-75 me-1 mb-1">{{ amenity.strip() }}</span>
+                {% endfor %}
+            {% else %}
+                <span class="badge bg-secondary opacity-50">Standard Setup</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card-footer bg-transparent border-top-0 pb-3 pt-0">
+          {% if user.role == 'admin' %}
+              <button class="btn btn-secondary w-100" disabled>
+                 Admin View Only
+              </button>
+          {% else %}
+              <a href="{{ url_for('views.bookings') }}" class="btn btn-outline-primary w-100">
+                Check Availability & Book
+              </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+      <div class="text-muted">
+        <h4>No rooms found matching your filters.</h4>
+        <p>Try adjusting the capacity or location.</p>
+        <a href="{{ url_for('views.view_rooms') }}" class="btn btn-link">Clear Filters</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="container-fluid" style="height: 50px"></div>
 </div>
+
+<style>
+  .hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    transition: all 0.3s ease;
+  }
+  .transition-card {
+    transition: all 0.3s ease;
+  }
+</style>
 {% endblock %}

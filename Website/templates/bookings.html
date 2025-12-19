@@ -1,30 +1,126 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} 
+{% block title %}Manual Requisition{% endblock %} 
+
+{% block content %}
 <div class="container py-5">
-  <h2 class="mb-4 text-center">Available Rooms</h2>
-  <div class="row row-cols-1 row-cols-md-3 g-4">
-    {% for room in rooms %}
-    <div class="col">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title">{{ room.room_name }}</h5>
-          <p class="card-text">
-            <strong>Location:</strong> {{ room.location }}
-          </p>
-          <p class="card-text">
-            <strong>Capacity:</strong> {{ room.capacity }}
-          </p>
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow border-0">
+        <div class="card-header bg-primary text-white text-center py-3">
+          <h3 class="mb-0 fw-bold">📅 Manual Room Requisition</h3>
+          <small>Select a room, check availability, and book.</small>
         </div>
-        <div class="card-footer bg-transparent border-top-0">
-          <a
-            href="{{ url_for('views.view_schedule', room_id=room.room_id) }}"
-            class="btn custom-schedule-btn w-100"
-          >
-            View Weekly Schedule
-          </a>
+        <div class="card-body p-4">
+          
+          <form action="{{ url_for('views.book_room_new') }}" method="POST" id="bookingForm">
+            
+            <div class="mb-4">
+              <label for="room_id" class="form-label fw-bold">Select Room</label>
+              <select class="form-select form-select-lg" name="room_id" id="room_id" required onchange="checkAvailability()">
+                <option value="" selected disabled>-- Choose a Room --</option>
+                {% for room in rooms %}
+                  <option value="{{ room.id }}">{{ room.name }} ({{ room.location }})</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-4">
+              <label for="date" class="form-label fw-bold">Date</label>
+              <input type="date" class="form-control" name="date" id="dateInput" required onchange="checkAvailability()">
+            </div>
+
+            <div id="availabilityStatus" class="alert alert-secondary d-none" role="alert">
+              </div>
+
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label for="start_time" class="form-label fw-bold">Start Time</label>
+                <input type="time" class="form-control" name="start_time" id="startTime" required onchange="checkTimeRules()">
+              </div>
+              <div class="col-md-6">
+                <label for="end_time" class="form-label fw-bold">End Time</label>
+                <input type="time" class="form-control" name="end_time" id="endTime" required onchange="checkTimeRules()">
+              </div>
+            </div>
+
+            <div class="mb-4" id="reasonField" style="display: none;">
+              <div class="alert alert-warning border-warning">
+                <strong>🌙 Evening Booking Detected</strong><br>
+                Admin approval is required for bookings after 6:00 PM. Please provide a reason below.
+              </div>
+              <label for="reason" class="form-label fw-bold text-danger">Application Reason *</label>
+              <textarea class="form-control" name="reason" id="reasonText" rows="3" placeholder="E.g., Robotics Society Rehearsal, Senior Project Meeting..."></textarea>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg">Submit Request</button>
+              <a href="{{ url_for('views.student_portal') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+
+          </form>
         </div>
       </div>
     </div>
-    {% endfor %}
   </div>
 </div>
+
+<script>
+  // 1. Fetch Availability from Backend
+  async function checkAvailability() {
+    const roomId = document.getElementById('room_id').value;
+    const date = document.getElementById('dateInput').value;
+    const statusBox = document.getElementById('availabilityStatus');
+
+    if (roomId && date) {
+      statusBox.classList.remove('d-none');
+      statusBox.className = "alert alert-info";
+      statusBox.innerHTML = "Checking availability...";
+
+      try {
+        const response = await fetch('/api/get-availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room_id: roomId, date: date })
+        });
+        
+        const data = await response.json();
+        
+        if (data.blocked_slots && data.blocked_slots.length > 0) {
+            statusBox.className = "alert alert-warning";
+            let html = "<strong>⚠️ Busy Times (Avoid these):</strong><ul class='mb-0 mt-2'>";
+            data.blocked_slots.forEach(slot => {
+                html += `<li>${slot.start} - ${slot.end}: ${slot.reason}</li>`;
+            });
+            html += "</ul>";
+            statusBox.innerHTML = html;
+        } else {
+            statusBox.className = "alert alert-success";
+            statusBox.innerHTML = "<strong>✅ Fully Available!</strong> (08:00 - 00:00)";
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        statusBox.innerHTML = "Error checking availability.";
+      }
+    }
+  }
+
+  // 2. Enforce 6 PM Rule (Show Reason Box)
+  function checkTimeRules() {
+    const start = document.getElementById('startTime').value;
+    const end = document.getElementById('endTime').value;
+    const reasonDiv = document.getElementById('reasonField');
+    const reasonInput = document.getElementById('reasonText');
+
+    // Check if time is 18:00 (6 PM) or later
+    if ((start && start >= "18:00") || (end && end > "18:00")) {
+      reasonDiv.style.display = 'block';
+      reasonInput.required = true;
+    } else {
+      reasonDiv.style.display = 'none';
+      reasonInput.required = false;
+      reasonInput.value = ""; // Clear text if hidden
+    }
+  }
+</script>
 {% endblock %}
