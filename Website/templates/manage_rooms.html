@@ -8,11 +8,11 @@
   <div class="row justify-content-center">
     <div class="col-md-10">
       
-      <h2 class="text-center text-white mb-5 fw-bold">🛠️ Room Management</h2>
+      <h2 class="text-center text-white mb-5 fw-bold">Room Management</h2>
 
       <div class="card shadow border-0 mb-5" style="background: rgba(255, 255, 255, 0.9);">
         <div class="card-header bg-success text-white">
-          <h5 class="mb-0">➕ Add New Room</h5>
+          <h5 class="mb-0">Add New Room</h5>
         </div>
         <div class="card-body p-4">
           <form method="POST" action="{{ url_for('views.manage_rooms') }}">
@@ -47,7 +47,7 @@
 
       <div class="card shadow border-0 mb-5" style="background: rgba(255, 255, 255, 0.9);">
         <div class="card-header bg-danger text-white">
-          <h5 class="mb-0">🗑️ Deactivate Room</h5>
+          <h5 class="mb-0">Deactivate Room</h5>
         </div>
         <div class="card-body p-4">
           <form method="POST" action="{{ url_for('views.manage_rooms') }}" onsubmit="return confirm('Are you sure? This will hide the room from students.');">
@@ -70,7 +70,7 @@
 
       <div class="card shadow border-0">
         <div class="card-header bg-dark text-white">
-          <h5 class="mb-0">📋 Active Rooms Directory</h5>
+          <h5 class="mb-0">Active Rooms Directory</h5>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">

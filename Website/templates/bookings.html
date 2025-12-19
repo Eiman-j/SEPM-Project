@@ -7,7 +7,7 @@
     <div class="col-md-8">
       <div class="card shadow border-0">
         <div class="card-header bg-primary text-white text-center py-3">
-          <h3 class="mb-0 fw-bold">📅 Manual Room Requisition</h3>
+          <h3 class="mb-0 fw-bold">Manual Room Requisition</h3>
           <small>Select a room, check availability, and book.</small>
         </div>
         <div class="card-body p-4">
@@ -45,7 +45,7 @@
 
             <div class="mb-4" id="reasonField" style="display: none;">
               <div class="alert alert-warning border-warning">
-                <strong>🌙 Evening Booking Detected</strong><br>
+                <strong>Evening Booking Detected</strong><br>
                 Admin approval is required for bookings after 6:00 PM. Please provide a reason below.
               </div>
               <label for="reason" class="form-label fw-bold text-danger">Application Reason *</label>
@@ -87,7 +87,7 @@
         
         if (data.blocked_slots && data.blocked_slots.length > 0) {
             statusBox.className = "alert alert-warning";
-            let html = "<strong>⚠️ Busy Times (Avoid these):</strong><ul class='mb-0 mt-2'>";
+            let html = "<strong>Busy Times (Avoid these):</strong><ul class='mb-0 mt-2'>";
             data.blocked_slots.forEach(slot => {
                 html += `<li>${slot.start} - ${slot.end}: ${slot.reason}</li>`;
             });
@@ -95,7 +95,7 @@
             statusBox.innerHTML = html;
         } else {
             statusBox.className = "alert alert-success";
-            statusBox.innerHTML = "<strong>✅ Fully Available!</strong> (08:00 - 00:00)";
+            statusBox.innerHTML = "<strong>Fully Available!</strong> (08:00 - 00:00)";
         }
 
       } catch (error) {

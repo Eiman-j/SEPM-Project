@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="text-dark fw-bold">⚡ AI Smart Scheduler</h1>
+        <h1 class="text-dark fw-bold">AI Smart Scheduler</h1>
         <a href="{{ url_for('views.home') }}" class="btn btn-outline-secondary">← Back to Dashboard</a>
     </div>
 
@@ -29,7 +29,7 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">
-                            🔍 Find Free Room
+                            Find Free Room
                         </button>
                     </form>
                 </div>
@@ -59,7 +59,7 @@
                         <ul class="list-group list-group-flush d-inline-block">
                             {% for slot in recommendation.available_slots %}
                                 <li class="list-group-item bg-transparent fw-bold fs-5 text-success border-0">
-                                    ⏰ {{ slot }}
+                                     {{ slot }}
                                 </li>
                             {% endfor %}
                         </ul>
